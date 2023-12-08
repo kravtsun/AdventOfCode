@@ -9,3 +9,6 @@ foreach (i RANGE 1 8)
     add_executable(solution${i} "solution${i}/main.cpp")
     target_compile_definitions(solution${i} PRIVATE WORKDIR="${PROJECT_SOURCE_DIR}/solution${i}/")
 endforeach ()
+
+add_executable(solution5_1 solution5/main1.cpp)
+target_compile_definitions(solution5_1 PRIVATE WORKDIR="${PROJECT_SOURCE_DIR}/solution5/")

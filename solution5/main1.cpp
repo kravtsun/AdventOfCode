@@ -4,23 +4,23 @@
 #include <sstream>
 #include <map>
 #include <algorithm>
+#include <fstream>
 
 #include <cassert>
 #include <cctype>
-#include <cstdio>
 
-using vint = std::vector<int>;
-using int64 = uint64_t;
+// REVIEW: naming like this is highly unrecommended,
+// but since the code is very concentrated it is OK to name types like this here.
+using int64 = uint64_t; // REVIEW: can be misleading, like #define true false
 using vint64 = std::vector<int64>;
 
-static vint64 readSeedNumbers()
-{
-    std::string headerLine, line;
+static vint64 readSeedNumbers() {
+    std::string headerLine, dummyLine;
     std::getline(std::cin, headerLine);
-    std::getline(std::cin, line); // empty line
+    std::getline(std::cin, dummyLine); // empty line
 
     std::istringstream headerStream{headerLine};
-    headerStream >> line; // seeds:
+    headerStream >> dummyLine; // seeds:
     int64 seedNumber;
     vint64 seedNumbers;
     while (headerStream >> seedNumber) {
@@ -29,19 +29,21 @@ static vint64 readSeedNumbers()
     return seedNumbers;
 }
 
+// REVIEW: inclusiveness of the Range is a range's property.
 struct Range {
-    int64 src;
-    int64 dst;
+    int64 src; // REVIEW: non-descriptive.
+    int64 dst; // REVIEW: non-descriptive.
     int64 length;
+
     Range() = default;
 };
 
 struct SectionMap {
     std::vector<Range> ranges;
 
-    [[nodiscard]] int64 getMapping(int64 src) const
-    {
-        for (const auto& r : ranges) {
+    // REVIEW: [[nodiscard]] - decreases readability?
+    [[nodiscard]] int64 getMapping(int64 src) const {
+        for (const auto &r: ranges) {
             if (r.src <= src && src < r.src + r.length) {
                 return r.dst + src - r.src;
             }
@@ -54,16 +56,14 @@ struct SectionMap {
     }
 };
 
-static SectionMap readSection()
-{
+static SectionMap readSection() {
     std::string headerLine;
     std::getline(std::cin, headerLine);
     if (headerLine.empty())
         return {};
 
     SectionMap result;
-    for (std::string line; std::getline(std::cin, line) && !line.empty(); )
-    {
+    for (std::string line; std::getline(std::cin, line) && !line.empty();) {
         std::istringstream lineStream{line};
         Range range{};
         lineStream >> range.dst >> range.src >> range.length;
@@ -73,9 +73,12 @@ static SectionMap readSection()
 }
 
 
-
 int main() {
-    FILE *f = freopen(WORKDIR "input.txt", "r", stdin);
+    // REVIEW: for freopen f is not used anywhere, can be misleading.
+    // REVIEW: will be good to check if file is really open.
+    std::ifstream fin{std::string(WORKDIR) + "input.txt"};
+    assert(fin.is_open());
+    std::cin.rdbuf(fin.rdbuf());
 
     auto numbers = readSeedNumbers();
 
@@ -84,15 +87,15 @@ int main() {
         if (sectionMap.empty()) break;
         vint64 newNumbers;
         newNumbers.reserve(numbers.size());
-        for (auto num : numbers) {
-            newNumbers.push_back(sectionMap.getMapping(num));
-        }
+        std::transform(numbers.begin(), numbers.end(), std::back_inserter(newNumbers),
+                       [&sectionMap](int64 num) {
+                           return sectionMap.getMapping(num);
+                       });
         numbers = newNumbers;
     }
 
     const auto result = *std::min_element(numbers.begin(), numbers.end());
     std::cout << result << std::endl;
 
-    fclose(f);
     return 0;
 }
