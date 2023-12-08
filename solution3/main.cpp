@@ -21,7 +21,7 @@ static const std::vector<std::string> numbers = {
 };
 
 int main() {
-    FILE *f = freopen("input.txt", "r", stdin);
+    FILE *f = freopen(WORKDIR "input.txt", "r", stdin);
 
     std::vector<std::string> field;
 

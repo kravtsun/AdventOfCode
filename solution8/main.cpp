@@ -19,7 +19,7 @@ template<typename T=int64> T lcm(T a, T b) {
 }
 
 int main() {
-    FILE *f = freopen("input.txt", "r", stdin);
+    FILE *f = freopen(WORKDIR "input.txt", "r", stdin);
 
     std::map<std::string, std::pair<std::string, std::string>> connections;
     std::string instructions;

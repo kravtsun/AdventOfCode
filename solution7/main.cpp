@@ -112,7 +112,7 @@ struct HandAndBid {
 };
 
 int main() {
-    FILE *f = freopen("input.txt", "r", stdin);
+    FILE *f = freopen(WORKDIR "input.txt", "r", stdin);
 
     std::vector<HandAndBid> handAndBids;
     std::string line;

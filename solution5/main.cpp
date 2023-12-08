@@ -128,7 +128,7 @@ static SectionMap readSection()
 
 
 int main() {
-    FILE *f = freopen("input.txt", "r", stdin);
+    FILE *f = freopen(WORKDIR "input.txt", "r", stdin);
 
     auto seedSet = readSeeds();
 

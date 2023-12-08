@@ -44,7 +44,7 @@ int64 getNumber()
 }
 
 int main() {
-    FILE *f = freopen("input.txt", "r", stdin);
+    FILE *f = freopen(WORKDIR "input.txt", "r", stdin);
 //
 //    auto timeNumbers = getVint();
 //    auto distanceNumbers = getVint();
