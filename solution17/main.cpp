@@ -39,10 +39,26 @@ void printField(const vs &field) {
     std::cout << std::endl;
 }
 
-static const pii speedLeft{0, -1};
-static const pii speedRight{0, 1};
-static const pii speedUp{-1, 0};
-static const pii speedDown{+1, 0};
+static constexpr pii speedLeft{0, -1};
+static constexpr pii speedRight{0, 1};
+static constexpr pii speedUp{-1, 0};
+static constexpr pii speedDown{+1, 0};
+
+constexpr pii reverseSpeed(const pii &speed) {
+    if (speed == speedUp) {
+        return speedDown;
+    } else if (speed == speedDown) {
+        return speedUp;
+    } else if (speed == speedLeft) {
+        return speedRight;
+    } else if (speed == speedRight) {
+        return speedLeft;
+    } else if (speed == pii(0, 0)) {
+        return speed;
+    } else {
+        assert(false);
+    }
+}
 
 static inline std::string speedString(const pii &speed) {
     if (speed == speedUp) {
@@ -60,25 +76,28 @@ static inline std::string speedString(const pii &speed) {
     }
 }
 
-pii move(const pii &p, const pii &speed) {
-    return pii{p.first + speed.first, p.second + speed.second};
+pii move(const pii &p, const pii &speed, int times) {
+    return pii{p.first + times * speed.first, p.second + times * speed.second};
+};
+
+constexpr bool checkPointInBounds(const pii &p, const int height, const int width) {
+//        return (!(p.first < 0 || p.first >= height || p.second < 0 || p.second >= width));
+    return p.first >= 0 && p.first < height && p.second >= 0 && p.second < width;
 };
 
 struct State {
     pii point; // (i, j)
     pii speed; // speed i, speed j
-    int movesLeft;
     int heatLoss;
 
     State();
 
-    State(pii point, pii speed, int movesLeft, int heatLoss)
-            : point(point), speed(speed), movesLeft(movesLeft), heatLoss(heatLoss) {}
+    State(pii point, pii speed, int heatLoss)
+            : point(point), speed(speed), heatLoss(heatLoss) {}
 
     friend bool operator==(const State &lhs, const State &rhs) {
         return lhs.point == rhs.point &&
                lhs.speed == rhs.speed &&
-               lhs.movesLeft == rhs.movesLeft &&
                lhs.heatLoss == rhs.heatLoss;
     }
 
@@ -89,7 +108,6 @@ struct State {
     friend bool operator<(const State &lhs, const State &rhs) {
         if (lhs.point != rhs.point) return lhs.point < rhs.point;
         if (lhs.speed != rhs.speed) return lhs.speed < rhs.speed;
-        if (lhs.movesLeft != rhs.movesLeft) return lhs.movesLeft < rhs.movesLeft;
         if (lhs.heatLoss != rhs.heatLoss) return lhs.heatLoss < rhs.heatLoss;
         return false;
     }
@@ -98,17 +116,20 @@ struct State {
         os << "(" << state.point.first << ", " << state.point.second << "): ";
 //        os << state.speed.first << ", " << state.speed.second;
         os << speedString(state.speed);
-        os << " (" << state.movesLeft << ") ";
         os << "heatLoss: " << state.heatLoss;
         return os;
     }
 };
 
-static const State INVALID_STATE{pii(-1, -1), pii(0, 0), -1, -1};
+static const State INVALID_STATE{pii(-1, -1), pii(0, 0), -1};
 
 State::State() {
     *this = INVALID_STATE;
 }
+
+// First star: 1, 3
+const int MIN_MOVES_SAME_DIR = 1;
+const int MAX_MOVES_SAME_DIR = 3;
 
 int main() {
     std::ifstream fin{WORKDIR "input.txt"};
@@ -119,137 +140,77 @@ int main() {
     const int height = field.size();
     const int width = field[0].size();
 
-    const auto checkPointInBounds = [height, width](const pii &p) -> bool {
-//        return (!(p.first < 0 || p.first >= height || p.second < 0 || p.second >= width));
-        return p.first >= 0 && p.first < height && p.second >= 0 && p.second < width;
-    };
+    const int MAX_POSSIBLE_HEATLOSS = height * width * 10;
 
     const auto getHeatLoss = [&field](const pii &p) -> int {
         return static_cast<int>(field[p.first][p.second] - '0');
     };
 
     std::map<pii, std::vector<State>> m;
+    const auto dstPoint = pii(height - 1, width - 1);
+    int bestHeatloss = MAX_POSSIBLE_HEATLOSS;
 
     const vpii possibleSpeeds{speedLeft, speedRight, speedUp, speedDown};
 
-    const int MAX_MOVES_SAME_DIR = 3;
-
-    constexpr auto findBetter = [](const std::vector<State> &olderStates, const State &state) -> bool {
-        return std::any_of(olderStates.begin(), olderStates.end(), [&state](const State &oldState) -> bool {
+    constexpr auto findBetter = [](const std::vector<State> &olderStates, const State &state, bool strict) -> bool {
+        return std::any_of(olderStates.begin(), olderStates.end(), [&](const State &oldState) -> bool {
             assert(oldState.point == state.point);
-            if (oldState.speed == state.speed && oldState.movesLeft >= state.movesLeft &&
-                oldState.heatLoss <= state.heatLoss) {
+            if (!strict && oldState == state) return true;
+            if (oldState.speed == state.speed && oldState.heatLoss < state.heatLoss) {
                 return true;
             }
             return false;
         });
     };
 
-    State initialState{pii(0, 0), pii(0, 0), 0, getHeatLoss(pii(0, 0))};
+    State initialState{pii(0, 0), pii(0, 0), getHeatLoss(pii(0, 0))};
 
     std::queue<State> q;
     q.push(initialState);
     m[initialState.point].push_back(initialState);
-    std::map<State, State> previousStates;
-    previousStates[initialState] = INVALID_STATE;
     while (!q.empty()) {
         const State state = q.front();
         q.pop();
 
+        if (findBetter(m[state.point], state, true)) continue;
+
         for (auto speed: possibleSpeeds) {
-            const auto newPoint = move(state.point, speed);
-            if (move(newPoint, state.speed) == state.point) continue;
-            if (!checkPointInBounds(newPoint)) continue;
-            const auto newHeatLoss = getHeatLoss(newPoint);
-            State newState{newPoint, speed, -1, state.heatLoss + newHeatLoss};
+            if (speed == state.speed || reverseSpeed(speed) == state.speed) continue;
 
-            if (speed == state.speed) {
-                if (state.movesLeft <= 0) continue;
-                newState.movesLeft = state.movesLeft - 1;
-            } else {
-                newState.movesLeft = MAX_MOVES_SAME_DIR - 1;
+            auto firstNewPoint = move(state.point, speed, MIN_MOVES_SAME_DIR);
+            if (!checkPointInBounds(firstNewPoint, height, width)) continue;
+
+            int heatLoss = state.heatLoss;
+
+            for (int i = 1; i < MIN_MOVES_SAME_DIR; ++i) {
+                auto newPoint = move(state.point, speed, i);
+                heatLoss += getHeatLoss(newPoint);
             }
 
-            auto &newerStates = m[newPoint];
-            if (!findBetter(newerStates, newState)) {
-                previousStates[newState] = state;
-                newerStates.push_back(newState);
-                q.push(newState);
+            for (int i = MIN_MOVES_SAME_DIR; i <= MAX_MOVES_SAME_DIR; ++i) {
+                auto newPoint = move(state.point, speed, i);
+                if (!checkPointInBounds(newPoint, height, width)) break;
+                heatLoss += getHeatLoss(newPoint);
+                if (heatLoss > bestHeatloss) break;
+
+                if (newPoint == dstPoint && heatLoss < bestHeatloss) {
+                    bestHeatloss = heatLoss;
+                }
+
+                State newState;
+                newState.point = newPoint;
+                newState.speed = speed;
+                newState.heatLoss = heatLoss;
+                auto &newerStates = m[newPoint];
+
+                if (!findBetter(newerStates, newState, false)) {
+                    newerStates.push_back(newState);
+                    q.push(newState);
+                }
             }
         }
     }
 
-    const auto dstPoint = pii(height - 1, width - 1);
-    assert(m.count(dstPoint));
-
-//    std::vector<State> path;
-
-    int result = height * width * 10;
-    for (auto state: m.at(dstPoint)) {
-        if (state.heatLoss < result) {
-            result = state.heatLoss;
-//            path.clear();
-//            for (auto s = state; s != INVALID_STATE; s = previousStates[s]) {
-//                path.push_back(s);
-//            }
-        }
-        result = std::min(result, state.heatLoss);
-    }
-
-//    std::reverse(path.begin(), path.end());
-//    for (auto s: path) {
-//        std::cout << s << std::endl;
-//    }
-
-    std::cout << result - getHeatLoss(pii(0, 0)) << std::endl;
-
-//    const vs sampleField = {
-//            "2>>34^>>>1323",
-//            "32v>>>35v5623",
-//            "32552456v>>54",
-//            "3446585845v52",
-//            "4546657867v>6",
-//            "14385987984v4",
-//            "44578769877v6",
-//            "36378779796v>",
-//            "465496798688v",
-//            "456467998645v",
-//            "12246868655<v",
-//            "25465488877v5",
-//            "43226746555v>",
-//    };
-//
-//    assert(sampleField.size() == field.size() && sampleField[0].size() == field[0].size());
-//    int sampleResult = 0;
-//    for (int i = 0; i < height; ++i) {
-//        for (int j = 0; j < width; ++j) {
-//
-//            const std::string directionCharacters = "><^v";
-//            const auto sampleChar = sampleField[i][j];
-//            const pii p{i, j};
-//            if (directionCharacters.find(sampleChar) != std::string::npos) {
-//                sampleResult += getHeatLoss(p);
-////                pii speed;
-////                if (sampleChar == '^') {
-////                    speed = speedUp;
-////                } else if (sampleChar == 'v') {
-////                    speed = speedDown;
-////                } else if (sampleChar == '<') {
-////                    speed = speedLeft;
-////                } else if (sampleChar == '>') {
-////                    speed = speedRight;
-////                } else {
-////                    assert(false);
-////                }
-////
-////                State sampleState{p, speed, };
-////
-////                assert(std::find(m[p].begin(), m[p].end(), State{});
-//            }
-//        }
-//    }
-//
-//    std::cout << "sampleResult=" << sampleResult << std::endl;
-
+    std::cout << bestHeatloss - getHeatLoss(pii(0, 0)) << std::endl;
     return 0;
 }
