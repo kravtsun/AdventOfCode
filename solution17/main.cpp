@@ -128,8 +128,9 @@ State::State() {
 }
 
 // First star: 1, 3
-const int MIN_MOVES_SAME_DIR = 1;
-const int MAX_MOVES_SAME_DIR = 3;
+// Second star: 4, 10
+const int MIN_MOVES_SAME_DIR = 4;
+const int MAX_MOVES_SAME_DIR = 10;
 
 int main() {
     std::ifstream fin{WORKDIR "input.txt"};
@@ -147,6 +148,7 @@ int main() {
     };
 
     std::map<pii, std::vector<State>> m;
+    const auto startPoint = pii(0, 0);
     const auto dstPoint = pii(height - 1, width - 1);
     int bestHeatloss = MAX_POSSIBLE_HEATLOSS;
 
@@ -163,7 +165,7 @@ int main() {
         });
     };
 
-    State initialState{pii(0, 0), pii(0, 0), getHeatLoss(pii(0, 0))};
+    State initialState{startPoint, pii(0, 0), getHeatLoss(startPoint)};
 
     std::queue<State> q;
     q.push(initialState);
@@ -177,7 +179,7 @@ int main() {
         for (auto speed: possibleSpeeds) {
             if (speed == state.speed || reverseSpeed(speed) == state.speed) continue;
 
-            auto firstNewPoint = move(state.point, speed, MIN_MOVES_SAME_DIR);
+            const auto firstNewPoint = move(state.point, speed, MIN_MOVES_SAME_DIR);
             if (!checkPointInBounds(firstNewPoint, height, width)) continue;
 
             int heatLoss = state.heatLoss;
