@@ -13,9 +13,11 @@
 #include <fstream>
 
 
-using int64 = uint64_t;
+using int64 = int64_t;
 using pss = std::pair<std::string, std::string>;
 using pii = std::pair<int, int>;
+using pii64 = std::pair<int64, int64>;
+using vpii64 = std::vector<pii64>;
 using vpii = std::vector<pii>;
 using vs = std::vector<std::string>;
 using vint = std::vector<int>;
@@ -60,14 +62,28 @@ DIR charToDir(char c) {
     }
 }
 
+char dirToChar(DIR dir) {
+    switch (dir) {
+        case DIR::UP:
+            return 'U';
+        case DIR::DOWN:
+            return 'D';
+        case DIR::LEFT:
+            return 'L';
+        case DIR::RIGHT:
+            return 'R';
+    }
+}
+
 static const pii speedLeft{0, -1};
 static const pii speedRight{0, 1};
 static const pii speedUp{-1, 0};
 static const pii speedDown{+1, 0};
 
 
-pii move(const pii &p, const pii &speed, int times = 1) {
-    return pii{p.first + times * speed.first, p.second + times * speed.second};
+template<typename T>
+std::pair<T, T> move(const std::pair<T, T> &p, const pii &speed, T times = 1) {
+    return std::pair<T, T>{p.first + times * speed.first, p.second + times * speed.second};
 };
 
 pii dirToSpeed(DIR dir) {
@@ -83,125 +99,97 @@ pii dirToSpeed(DIR dir) {
     }
 }
 
+int64 hexToNumber(const std::string& code) {
+    int64 result = 0;
+    for (auto c: code) {
+        result *= 16;
+        if (isdigit(c)) {
+            result += c - '0';
+        } else {
+            result += 10 + c - 'a';
+        }
+    }
+    return result;
+}
+
 int main() {
     std::ifstream fin{WORKDIR "input.txt"};
     assert(fin.is_open());
     std::cin.rdbuf(fin.rdbuf());
 
-    std::vector<std::pair<DIR, int>> v;
+    vpii64 points;
+    const pii64 startPoint{0, 0};
+    pii64 p = startPoint;
     std::string line;
     while (std::getline(std::cin, line)) {
         std::istringstream lineStream{line};
-        char dir;
-        int num;
-        lineStream >> dir >> num;
-        v.emplace_back(charToDir(dir), num);
-    }
+        char dirChar;
+        int64 num;
+        lineStream >> dirChar >> num;
+        char c;
+        lineStream >> c;
+        if (c == ' ') {
+            lineStream >> c;
+            assert(c == '(');
+        }
+        lineStream >> c;
+        assert(c == '#');
+        std::string code;
+        for (int i = 0; i < 5; ++i) {
+            lineStream >> c;
+            code += c;
+        }
+        num = hexToNumber(code);
+        lineStream >> dirChar;
 
-    int imin = INT32_MAX;
-    int imax = INT32_MIN;
+        DIR dir;
+        if (dirChar == '0') {
+            dir = DIR::RIGHT;
+        } else if (dirChar == '1') {
+            dir = DIR::DOWN;
+        } else if (dirChar == '2') {
+            dir = DIR::LEFT;
+        } else if (dirChar == '3') {
+            dir = DIR::UP;
+        } else {
+            assert(false);
+        }
 
-    int jmin = INT32_MAX;
-    int jmax = INT32_MIN;
+//        std::cout << dirToChar(dir) << " " << num << std::endl;
 
-    pii p{0, 0};
-    for (auto [dir, num] : v) {
+        points.push_back(p);
         auto speed = dirToSpeed(dir);
-        p = move(p, speed, num);
-        imin = std::min(imin, p.first);
-        imax = std::max(imax, p.first);
-        jmin = std::min(jmin, p.second);
-        jmax = std::max(jmax, p.second);
+        p = move<int64>(p, speed, num);
     }
 
-    const int width = jmax - jmin + 1;
-    const int height = imax - imin + 1;
+    assert(p == startPoint);
 
-    vs field(height + 2);
-    for (int i = 0; i < height + 2; ++i) {
-        for (int j = 0; j < width + 2; ++j) {
-            field[i] += '.';
-        }
-//        field[i].resize(width + 2);
+    int64 minSecond = INT64_MAX;
+    int64 minFirst = INT64_MAX;
+    int64 maxSecond = INT64_MIN;
+    int64 maxFirst = INT64_MIN;
+    for (const auto& p : points) {
+        minSecond = std::min(minSecond, p.second);
+        minFirst = std::min(minFirst, p.first);
+        maxSecond = std::max(maxSecond, p.second);
+        maxFirst = std::max(maxFirst, p.first);
     }
 
-    p.first -= imin;
-    p.second -= jmin;
-
-    p.first += 1;
-    p.second += 1;
-
-    for (auto [dir, num] : v) {
-        auto speed = dirToSpeed(dir);
-        auto nextPoint = move(p, speed, num);
-
-        auto [ifrom, jfrom] = p;
-        auto [ito, jto] = nextPoint;
-        if (ifrom > ito) {
-            std::swap(ifrom, ito);
+    int64 perimeter = 0;
+    int64 result = 0;
+    for (int i = 0; i < points.size(); ++i) {
+        const auto currentPoint = points[i];
+        const auto nextPoint = i + 1 < points.size() ? points[i + 1] : points[0];
+        if (currentPoint.first != nextPoint.first) {
+            int64 newArea = (currentPoint.first - nextPoint.first) * currentPoint.second;
+            result += newArea;
         }
 
-        if (jfrom > jto) {
-            std::swap(jfrom, jto);
-        }
-
-        for (int i = ifrom; i <= ito; ++i) {
-            for (int j = jfrom; j <= jto; ++j) {
-                field[i][j] = '#';
-                assert(i >= 0 && i < field.size());
-                assert(j >= 0 && j < field[0].size());
-            }
-        }
-        p = nextPoint;
+        perimeter += std::abs(currentPoint.first - nextPoint.first);
+        perimeter += std::abs(currentPoint.second - nextPoint.second);
     }
-
-    const auto paint = [&field](pii startPoint, char color) {
-        // Paint points (BFS)
-        std::queue<pii> q;
-        q.emplace(startPoint.first, startPoint.second);
-
-        while (!q.empty()) {
-            auto v = q.front();
-            q.pop();
-
-            if (field[v.first][v.second] != '.') continue;
-            field[v.first][v.second] = color;
-            const int DX[] = {0, 0, -1, 1};
-            const int DY[] = {-1, 1, 0, 0};
-            for (int k = 0; k < 4; ++k) {
-                const auto dx = DX[k];
-                const auto dy = DY[k];
-                const auto newY = v.first + dy;
-                if (newY < 0 || newY >= field.size()) {
-                    continue;
-                }
-                const auto newX = v.second + dx;
-                if (newX < 0 || newX >= field[0].size()) {
-                    continue;
-                }
-                q.emplace(newY, newX);
-            }
-        }
-    };
-
-    for (int i = 0; i < field.size(); ++i) {
-        paint(pii{i, 0}, 'O');
-        paint(pii{i, field[0].size() - 1}, 'O');
-    }
-
-    for (int j = 0; j < field[0].size(); ++j) {
-        paint(pii{0, j}, 'O');
-        paint(pii{field.size() - 1, j}, 'O');
-    }
-    printField(field);
-
-    int result = 0;
-    for (auto lf : field) {
-        result += std::count(lf.begin(), lf.end(), '.');
-        result += std::count(lf.begin(), lf.end(), '#');
-    }
-
-    std::cout << result << std::endl;
+    assert(perimeter % 2 == 0);
+    std::cout << std::abs(result) + perimeter / 2 + 1  << std::endl;
 
     return 0;
 }
