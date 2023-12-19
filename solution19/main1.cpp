@@ -75,20 +75,17 @@ private:
 
 static const char LESS = '<';
 static const char GREATER = '>';
-static const int MIN_VALUE = 1;
-static const int MAX_VALUE = 4000;
 struct Rule {
     PartCategory cat;
     char lessOrGreater;
     int threshold;
     std::string dst;
-    bool strict = true;
 
-    [[nodiscard]] bool isUnconditional() const {
-        if (threshold != MIN_VALUE)
+    [[nodiscard]] bool isLast() const {
+        if (threshold != INT32_MIN)
             return false;
 
-        assert(cat == 'x' && lessOrGreater == GREATER && !strict);
+        assert(cat == 'x' && lessOrGreater == GREATER);
         return true;
     }
 
@@ -102,13 +99,15 @@ struct Rule {
 
         assert(ruleString.back() != ',');
         assert(ruleString.back() != '}');
+//        if (ruleString.back() == ',' || ruleString.back() == '}') {
+//            ruleString.pop_back();
+//        }
 
         if (ruleString.find(':') == std::string::npos) {
             rule.cat = 'x';
             rule.lessOrGreater = GREATER;
-            rule.threshold = MIN_VALUE;
+            rule.threshold = INT32_MIN;
             rule.dst = ruleString;
-            rule.strict = false;
             return is;
         }
 
@@ -122,13 +121,6 @@ struct Rule {
         return is;
     }
 };
-
-Rule reverseRule(Rule rule) {
-    rule.lessOrGreater = (rule.lessOrGreater == LESS ? GREATER : LESS);
-    rule.strict = !rule.strict;
-    rule.dst = "";
-    return rule;
-}
 
 static const std::string ACCEPTED = "A";
 static const std::string REJECTED = "R";
@@ -146,7 +138,7 @@ struct RuleSet {
             Rule rule;
             is >> rule;
             ruleSet.rules.push_back(rule);
-            if (rule.isUnconditional()) break;
+            if (rule.isLast()) break;
         }
 
         return is;
@@ -180,83 +172,48 @@ int main() {
     assert(ruleSectionEnded);
     assert(ruleSets.count("in"));
 
-    std::vector<RuleSet> acceptedRuleSets;
-    std::queue<std::tuple<std::string, RuleSet>> q;
-    q.emplace("in", RuleSet{});
-    while (!q.empty()) {
-        auto [ruleSetName, currentRuleSet] = q.front();
-        q.pop();
-        for (const auto& rule : ruleSets.at(ruleSetName).rules) {
-            if (rule.dst == ACCEPTED) {
-                auto ruleSet = currentRuleSet;
-                ruleSet.rules.push_back(rule);
-                acceptedRuleSets.push_back(ruleSet);
-                currentRuleSet.rules.push_back(reverseRule(rule));
-            } else if (rule.dst == REJECTED) {
-                currentRuleSet.rules.push_back(reverseRule(rule));
-            } else {
-                assert(!rule.dst.empty());
-                auto ruleSet = currentRuleSet;
-                ruleSet.rules.push_back(rule);
-                q.emplace(rule.dst, ruleSet);
-                currentRuleSet.rules.push_back(reverseRule(rule));
-            }
-        }
+    while (std::getline(std::cin, line)) {
+        std::istringstream lineStream{line};
+        Part part;
+        lineStream >> part;
+        parts.push_back(part);
     }
 
-    const auto printRuleSets = [](const std::vector<RuleSet> ruleSets, bool skipUnconditional = true) {
-        for (const auto& ruleSet : ruleSets) {
-            for (const auto& rule : ruleSet.rules) {
-                if (skipUnconditional && rule.isUnconditional()) {
-                    continue;
-                }
-                std::cout << rule.cat << " " << rule.lessOrGreater << (rule.strict ? "" : "=") << " " << rule.threshold << ", ";
-            }
-            std::cout << std::endl;
-        }
-    };
+    const auto isAccepted = [&ruleSets](const Part& part) -> bool {
 
-//    printRuleSets(acceptedRuleSets);
+        RuleSet ruleSet = ruleSets.at("in");
+        while (true) {
+            std::string nextRuleSetName;
+            for (Rule const &rule: ruleSet.rules) {
+                bool isAccepted = false;
+                if (rule.lessOrGreater == LESS) {
+                    isAccepted = isAccepted || (part.get(rule.cat) < rule.threshold);
+                } else if (rule.lessOrGreater == GREATER) {
+                    isAccepted = isAccepted || (part.get(rule.cat) > rule.threshold);
+                }
+                if (isAccepted) {
+                    if (rule.dst == ACCEPTED) {
+                        return true;
+                    } else if (rule.dst == REJECTED) {
+                        return false;
+                    } else {
+                        nextRuleSetName = rule.dst;
+                        break;
+                    }
+                }
+            }
+            ruleSet = ruleSets.at(nextRuleSetName);
+        }
+
+        assert(false);
+    };
 
     int64 result = 0;
+    for (auto const& part : parts) {
 
-    using AcceptedField = std::map<PartCategory, std::vector<bool>>;
-
-    const auto acceptedFieldCount = [](const AcceptedField& acceptedField) -> int64 {
-        int64 currentResult = 1;
-        for (const auto& [cat, field] : acceptedField) {
-            currentResult *= std::count(field.begin(), field.end(), true);
+        if (isAccepted(part)) {
+            result += part.sum();
         }
-        return currentResult;
-    };
-
-    const std::vector<PartCategory> AllCategories = {'x', 'm', 'a', 's'};
-
-    std::vector<AcceptedField> acceptedFields;
-    for (const auto& ruleSet : acceptedRuleSets) {
-        AcceptedField acceptedField;
-        for (char c : AllCategories) {
-            auto& catField = acceptedField[c];
-            catField.assign(MAX_VALUE - MIN_VALUE + 1, true);
-        }
-
-        for (const auto& rule : ruleSet.rules) {
-            auto& catField = acceptedField.at(rule.cat);
-            if (rule.lessOrGreater == LESS) {
-                std::fill(catField.begin() + rule.threshold + 1 - MIN_VALUE, catField.end(), false);
-            } else if (rule.lessOrGreater == GREATER) {
-                std::fill(catField.begin(), catField.begin() + rule.threshold - MIN_VALUE, false);
-            } else {
-                assert(false);
-            }
-
-            if (rule.strict) {
-                catField.at(rule.threshold - MIN_VALUE) = false;
-            }
-        }
-
-        result += acceptedFieldCount(acceptedField);
-        acceptedFields.push_back(acceptedField);
     }
 
     std::cout << result << std::endl;
