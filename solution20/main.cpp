@@ -25,6 +25,14 @@ using vvint = std::vector<vint>;
 using vint64 = std::vector<int64>;
 using vvint64 = std::vector<vint64>;
 
+template<typename T=int64> T gcd(T a, T b) {
+    return b == 0? a : gcd(b, a % b);
+}
+
+template<typename T=int64> T lcm(T a, T b) {
+    return a / gcd(a, b) * b;
+}
+
 enum class Signal {
     Low,
     High
@@ -231,37 +239,13 @@ int main() {
         }
     }
 
-//    for (auto [nodeName, nodePtr] : nodesMap) {
-//        if (nodePtr.lock()->outputNodes.empty()) {
-//            std::cout << "No output: " << nodeName << std::endl;
-//        }
-//
-//        if (nodePtr.lock()->inputNodes.empty()) {
-//            std::cout << "No input: " << nodeName << std::endl;
-//        }
-//    }
+    std::set<std::string> childrenNames{"dc", "rv", "vp", "cq"};
+    std::map<std::string, vint64> childrenOccurences;
+    for (const auto& childName : childrenNames) {
+        childrenOccurences[childName];
+    }
 
-//    std::map<std::string, bool> used;
-
-//    std::queue<std::string> q;
-//    q.push("rx");
-//    while (!q.empty()) {
-//        auto nodeName = q.front();
-//        q.pop();
-//        auto nodePtr = nodesMap.at(nodeName).lock();
-//        for (auto incomingPtr : nodePtr->inputNodes) {
-//            auto incomingName = incomingPtr.lock()->name;
-//            if (!used[incomingName]) {
-//                used[incomingName] = true;
-//                q.push(incomingName);
-//            }
-//        }
-//    }
-
-//    return 0;
-
-    std::map<Signal, int64> signalCount;
-    for (int64 i = 0; i < 1000; ++i) {
+    for (int64 i = 0; i >= 0; ++i) {
 
         // to, from, signal
         std::queue<Node::SignalSending> q;
@@ -269,7 +253,6 @@ int main() {
 
         q.push(Node::SignalSending{{}, nodePtr, Signal::Low});
 
-        bool found = false;
         while (!q.empty()) {
             Node::SignalSending signalSending = q.front();
             q.pop();
@@ -277,30 +260,35 @@ int main() {
             auto fromPtr = signalSending.from;
             auto toPtr = signalSending.to;
             auto signal = signalSending.signal;
-            signalCount[signal]++;
-
-//            if (toPtr.lock()->name == "rx" && signal == Signal::Low) {
-//                found = true;
-//            }
 
             const auto signalSendings = toPtr.lock()->receiveInput(fromPtr, signal);
+            if (!signalSendings.empty()) {
+                auto ss = signalSendings.front();
+                auto name = ss.from.lock()->name;
+                if (ss.signal == Signal::High && childrenNames.count(name)) {
+                    childrenOccurences[name].push_back(i);
+                }
+            }
+
             for (auto ss: signalSendings) {
                 q.push(std::move(ss));
             }
         }
-//        if (found) {
-//            std::cout << i + 1 << std::endl;
-//            break;
-//        }
 
-//        if (i % 1'000 == 0) {
-//            std::cout << i / 1'000 << std::endl;
-//        }
+        if (std::all_of(childrenOccurences.begin(), childrenOccurences.end(), [](const std::pair<std::string, vint64>& sv) {
+            return sv.second.size() > 1;
+        })) {
+            int64 result = 1;
+
+            for (auto [childName, occurences] : childrenOccurences) {
+                assert(childrenOccurences.size() >= 2);
+                result = lcm(result, occurences[1] - occurences[0]);
+            }
+
+            std::cout << result << std::endl;
+            break;
+        }
     }
-
-    std::cout << signalCount.at(Signal::Low) * signalCount.at(Signal::High) << std::endl;
-
-//    std::cout << result << std::endl;
 
     return 0;
 }
