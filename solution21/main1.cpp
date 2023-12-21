@@ -93,17 +93,9 @@ int main() {
     //In exactly 1000 steps, he can reach 668697 garden plots.
     //In exactly 5000 steps, he can reach 16733044 garden plots.
 
-    vint diffs;
-
     spii points;
     points.insert(startPoint);
-
-    const int GOAL = 26501365;
-//    const int GOAL = 1000;
-    const int LOOP_SIZE = 131;
-    const int SEED = 3 * LOOP_SIZE;
-//    const int SEED = 1000;
-    for (int i = 0; i < SEED; ++i) {
+    for (int i = 0; i < 64; ++i) {
         spii nextPoints;
         for (auto p : points) {
             for (auto speed : speeds) {
@@ -116,30 +108,10 @@ int main() {
                 }
             }
         }
-        diffs.push_back(nextPoints.size() - points.size());
-        points = nextPoints;
-
-        std::cout << i << " " << points.size() << "\n";
+        std::swap(points, nextPoints);
     }
 
-//    std::cout << points.size() << std::endl;
-//    return 0;
-
-    std::vector<int64> currentDiffs{diffs.begin() + diffs.size() - LOOP_SIZE, diffs.end()};
-    diffs.erase(diffs.begin() + diffs.size() - LOOP_SIZE, diffs.end());
-
-    assert(diffs.size() == 2 * LOOP_SIZE);
-
-    int64 result = points.size();
-    for (int i = 0; i < GOAL - SEED; ++i) {
-        const int iLoop = i % LOOP_SIZE;
-        currentDiffs[iLoop] += diffs[iLoop + LOOP_SIZE] - diffs[iLoop];
-        const auto currentDiff = currentDiffs[iLoop];
-        result += currentDiff;
-        std::cout << i + SEED << " " << result << "\n";
-    }
-
-    std::cout << result << std::endl;
+    std::cout << points.size() << std::endl;
 
     return 0;
 }
