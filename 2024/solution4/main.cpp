@@ -7,7 +7,7 @@
 #include <map>
 #include <functional>
 
-int star1(const std::vector<std::string> &lines) {
+static int star1(const std::vector<std::string> &lines) {
     const std::string sample = "XMAS";
     const auto n = static_cast<int>(lines.size());
     const auto m = static_cast<int>(lines[0].size());
@@ -43,7 +43,30 @@ int star1(const std::vector<std::string> &lines) {
     return result;
 }
 
+int star2(const std::vector<std::string> &lines) {
+    const auto n = static_cast<int>(lines.size());
+    const auto m = static_cast<int>(lines[0].size());
+    const auto isPairGood = [](char l, char r) {
+        return l == 'M' && r == 'S' ||
+                l == 'S' && r == 'M';
+    };
+    int result = 0;
+    for (int i = 1; i + 1 < n; ++i) {
+        assert(lines[i].size() == m);
+        for (int j = 1; j + 1 < m; ++j) {
+            if (lines[i][j] != 'A') continue;
+            std::array lefts{lines[i - 1][j - 1], lines[i + 1][j - 1]};
+            std::array rights{lines[i - 1][j + 1], lines[i + 1][j + 1]};
+            if (isPairGood(lefts[0], rights[1]) && isPairGood(lefts[1], rights[0])) {
+                result++;
+            }
+        }
+    }
+    return result;
+}
+
 int main() {
+//    std::ifstream fin{"example_input.txt"};
     std::ifstream fin{"input.txt"};
     assert(fin.is_open());
 
@@ -53,7 +76,7 @@ int main() {
         lines.push_back(line);
     }
 
-    std::cout << star1(lines) << std::endl;
+    std::cout << star2(lines) << std::endl;
 
     return 0;
 }
