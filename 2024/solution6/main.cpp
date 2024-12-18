@@ -188,12 +188,14 @@ static auto createGraph(const std::vector<std::string> &lines) {
     return nextStates;
 }
 
-static auto putObstacle(int n, int m, States nextStates, pii obstacle) {
+// returns set of updates to nextStates
+static auto putObstacle(int n, int m, const States &nextStates, const pii &obstacle) {
     const auto isFreePointState = [&nextStates](int kdir, const pii &p, const int n, const int m) {
         return isGoodPoint(p, n, m) && nextStates[kdir][p.first][p.second] != INVALID_STATE;
     };
+    std::map<State, State> updates;
     for (int kdir = 0; kdir < ndirs; ++kdir) {
-        nextStates[kdir][obstacle.first][obstacle.second] = INVALID_STATE;
+        updates.emplace(State{obstacle, kdir}, INVALID_STATE);
 
         auto delta = dirToDelta.at(dirs[kdir]);
         auto rotateKDir = (kdir + 1) % ndirs;
@@ -202,16 +204,18 @@ static auto putObstacle(int n, int m, States nextStates, pii obstacle) {
 
         State shouldNowGo{rotatePoint, rotateKDir};
         for (auto p = rotatePoint; isFreePointState(kdir, p, n, m); p = subtractPoint(p, delta)) {
-            nextStates[kdir][p.first][p.second] = shouldNowGo;
+            updates.emplace(State{p, kdir}, shouldNowGo);
         }
     }
-    return nextStates;
+    return updates;
 }
 
-static bool hasLoop(const States &nextStates, const State &startState) {
+static bool
+hasLoop(const States &nextStates, const std::map<State, State> &nextStatesUpdates, const State &startState) {
     std::set<State> used;
     for (State state = startState;
-         state != ESCAPING_STATE; state = nextStates[state.dir][state.p.first][state.p.second]) {
+         state != ESCAPING_STATE; state = nextStatesUpdates.count(state) ? nextStatesUpdates.at(state)
+                                                                         : nextStates[state.dir][state.p.first][state.p.second]) {
         assert(nextStates[state.dir][state.p.first][state.p.second] != INVALID_STATE);
         if (used.count(state)) {
             return true;
@@ -240,8 +244,8 @@ static int star2(std::vector<std::string> lines, pii start) {
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < m; ++j) {
             if (lines[i][j] == '.' && pii{i, j} != start) {
-                auto currentNextStates = putObstacle(n, m, nextStates, pii{i, j});
-                if (hasLoop(currentNextStates, startState)) {
+                auto nextStatesUpdates = putObstacle(n, m, nextStates, pii{i, j});
+                if (hasLoop(nextStates, nextStatesUpdates, startState)) {
                     result++;
                 }
             }
