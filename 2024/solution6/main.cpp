@@ -6,7 +6,6 @@
 #include <algorithm>
 #include <cassert>
 #include <set>
-#include <unordered_set>
 
 using pii = std::pair<int, int>;
 
@@ -39,13 +38,6 @@ static const std::map<char, pii> dirToDelta = {
         {UP,    {-1, 0}},
         {DOWN,  {1,  0}},
 };
-
-// TODO remove
-static void printField(const std::vector<std::string> &lines) {
-    for (const auto &l: lines) {
-        std::cout << l << std::endl;
-    }
-}
 
 static auto readLines(const std::string &filepath) {
     std::ifstream fin{filepath};
@@ -195,7 +187,7 @@ static auto putObstacle(int n, int m, const States &nextStates, const pii &obsta
     };
     std::map<State, State> updates;
     for (int kdir = 0; kdir < ndirs; ++kdir) {
-        updates.emplace(State{obstacle, kdir}, INVALID_STATE);
+        updates[State{obstacle, kdir}] = INVALID_STATE;
 
         auto delta = dirToDelta.at(dirs[kdir]);
         auto rotateKDir = (kdir + 1) % ndirs;
@@ -204,7 +196,7 @@ static auto putObstacle(int n, int m, const States &nextStates, const pii &obsta
 
         State shouldNowGo{rotatePoint, rotateKDir};
         for (auto p = rotatePoint; isFreePointState(kdir, p, n, m); p = subtractPoint(p, delta)) {
-            updates.emplace(State{p, kdir}, shouldNowGo);
+            updates[State{p, kdir}] = shouldNowGo;
         }
     }
     return updates;
@@ -212,10 +204,12 @@ static auto putObstacle(int n, int m, const States &nextStates, const pii &obsta
 
 static bool
 hasLoop(const States &nextStates, const std::map<State, State> &nextStatesUpdates, const State &startState) {
+    const auto getNextState = [&nextStates, &nextStatesUpdates](const State &state) {
+        return nextStatesUpdates.count(state) ? nextStatesUpdates.at(state)
+                                              : nextStates[state.dir][state.p.first][state.p.second];
+    };
     std::set<State> used;
-    for (State state = startState;
-         state != ESCAPING_STATE; state = nextStatesUpdates.count(state) ? nextStatesUpdates.at(state)
-                                                                         : nextStates[state.dir][state.p.first][state.p.second]) {
+    for (State state = startState; state != ESCAPING_STATE; state = getNextState(state)) {
         assert(nextStates[state.dir][state.p.first][state.p.second] != INVALID_STATE);
         if (used.count(state)) {
             return true;
@@ -231,15 +225,13 @@ static int star2(std::vector<std::string> lines, pii start) {
     // by placing '#' in a point '.' we need to introduce a new set of connected edges
     const auto startDir = lines[start.first][start.second];
     const auto dir = static_cast<int>(std::distance(dirs.begin(), std::find(dirs.begin(), dirs.end(), startDir)));
-    assert(lines[start.first][start.second] == UP);
     lines[start.first][start.second] = '.';
+
+    const auto nextStates = createGraph(lines);
     const State startState{start, dir};
 
     const int n = static_cast<int>(lines.size());
     const int m = static_cast<int>(lines[0].size());
-
-    const auto nextStates = createGraph(lines);
-
     int result = 0;
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < m; ++j) {
@@ -254,17 +246,15 @@ static int star2(std::vector<std::string> lines, pii start) {
     return result;
 }
 
-// 6, 1705
 static auto star2(const std::string &filepath) {
     auto [lines, start] = readLines(filepath);
     return star2(lines, start);
 }
 
 int main() {
-//    std::cout << star1("example_input.txt") << std::endl;
-//    std::cout << star1("input.txt") << std::endl;
-
-//    std::cout << star2("example_input.txt") << std::endl;
+    std::cout << star1("example_input.txt") << std::endl;
+    std::cout << star1("input.txt") << std::endl;
+    std::cout << star2("example_input.txt") << std::endl;
     std::cout << star2("input.txt") << std::endl;
     return 0;
 }
