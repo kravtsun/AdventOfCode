@@ -140,16 +140,17 @@ const pii INVALID_POINT{std::numeric_limits<int>::max(), std::numeric_limits<int
 const State INVALID_STATE{INVALID_POINT, -1};
 
 using States = std::vector<std::vector<std::vector<State>>>;
-using Edges = std::map<State, State>;
 
 static auto createGraph(const std::vector<std::string> &lines) {
     const auto n = static_cast<int>(lines.size());
     const auto m = static_cast<int>(lines[0].size());
     // [ndirs][n][m] -> the closest point by given direction by first index
-    // TODO remove in favour of edges, or remove edges
     States nextStates(ndirs, std::vector<std::vector<State>>(n, std::vector<State>(m, INVALID_STATE)));
 
-    Edges edges; // TODO C-array
+    const auto isFreePoint = [&lines](const pii &p, const int n, const int m) {
+        return isGoodPoint(p, n, m) && lines[p.first][p.second] == '.';
+    };
+
     for (int d = 0; d < ndirs; ++d) {
         for (int i = 0; i < n; ++i) {
             for (int j = 0; j < m; ++j) {
@@ -157,8 +158,8 @@ static auto createGraph(const std::vector<std::string> &lines) {
                     auto delta = dirToDelta.at(dirs[d]);
                     pii startPoint{i, j};
                     pii p = startPoint;
-                    for (; isGoodPoint(p, n, m) && lines[p.first][p.second] == '.' &&
-                           nextStates[d][p.first][p.second] == INVALID_STATE; p = addPoint(p, delta));
+                    for (; isFreePoint(p, n, m) && nextStates[d][p.first][p.second] == INVALID_STATE; p = addPoint(p,
+                                                                                                                   delta));
 
                     // last point when the loop above ended
                     // - before we hit the field's borders, '#' or already visited cell
@@ -179,19 +180,20 @@ static auto createGraph(const std::vector<std::string> &lines) {
 
                     for (p = startPoint; p != lastPoint; p = addPoint(p, delta)) {
                         nextStates[d][p.first][p.second] = nextState;
-                        edges[State{p, d}] = nextState;
                     }
                 }
             }
         }
     }
-    return std::make_tuple(nextStates, edges);
+    return nextStates;
 }
 
-static auto putObstacle(int n, int m, States nextStates, Edges edges, pii obstacle) {
+static auto putObstacle(int n, int m, States nextStates, pii obstacle) {
+    const auto isFreePointState = [&nextStates](int kdir, const pii &p, const int n, const int m) {
+        return isGoodPoint(p, n, m) && nextStates[kdir][p.first][p.second] != INVALID_STATE;
+    };
     for (int kdir = 0; kdir < ndirs; ++kdir) {
         nextStates[kdir][obstacle.first][obstacle.second] = INVALID_STATE;
-        edges.erase(State{obstacle, kdir});
 
         auto delta = dirToDelta.at(dirs[kdir]);
         auto rotateKDir = (kdir + 1) % ndirs;
@@ -199,20 +201,18 @@ static auto putObstacle(int n, int m, States nextStates, Edges edges, pii obstac
         if (!isGoodPoint(rotatePoint, n, m)) continue;
 
         State shouldNowGo{rotatePoint, rotateKDir};
-        for (auto p = rotatePoint;
-             isGoodPoint(p, n, m) && nextStates[kdir][p.first][p.second] != INVALID_STATE; p = subtractPoint(p,
-                                                                                                             delta)) {
+        for (auto p = rotatePoint; isFreePointState(kdir, p, n, m); p = subtractPoint(p, delta)) {
             nextStates[kdir][p.first][p.second] = shouldNowGo;
-            edges[State{p, kdir}] = shouldNowGo;
         }
     }
-    return std::make_tuple(nextStates, edges);
+    return nextStates;
 }
 
-static bool hasLoop(const Edges &edges, const State &startState) {
+static bool hasLoop(const States &nextStates, const State &startState) {
     std::set<State> used;
-    for (State state = startState; state != ESCAPING_STATE; state = edges.at(state)) {
-        assert(edges.count(state));
+    for (State state = startState;
+         state != ESCAPING_STATE; state = nextStates[state.dir][state.p.first][state.p.second]) {
+        assert(nextStates[state.dir][state.p.first][state.p.second] != INVALID_STATE);
         if (used.count(state)) {
             return true;
         }
@@ -234,14 +234,14 @@ static int star2(std::vector<std::string> lines, pii start) {
     const int n = static_cast<int>(lines.size());
     const int m = static_cast<int>(lines[0].size());
 
-    const auto [nextStates, edges] = createGraph(lines);
+    const auto nextStates = createGraph(lines);
 
     int result = 0;
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < m; ++j) {
             if (lines[i][j] == '.' && pii{i, j} != start) {
-                auto [currentNextStates, currentEdges] = putObstacle(n, m, nextStates, edges, pii{i, j});
-                if (hasLoop(currentEdges, startState)) {
+                auto currentNextStates = putObstacle(n, m, nextStates, pii{i, j});
+                if (hasLoop(currentNextStates, startState)) {
                     result++;
                 }
             }
