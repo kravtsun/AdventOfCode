@@ -3,18 +3,12 @@
 #include <cassert>
 #include <vector>
 #include <map>
-#include <queue>
 #include <set>
+#include <numeric>
 
 using pii = std::pair<int, int>;
-static bool isGoodCoordinate(int x, int n) {
-    return 0 <= x && x < n;
-}
-static bool isGoodPoint(pii p, int n, int m) {
-    return isGoodCoordinate(p.first, n) && isGoodCoordinate(p.second, m);
-}
 
-static auto read_lines(std::istream &fin) {
+static auto readLines(std::istream &fin) {
     std::vector<std::string> lines;
     std::string line;
     while (std::getline(fin, line)) {
@@ -69,46 +63,75 @@ static auto makeGraph(const std::vector<std::string> &lines) {
     return std::make_tuple(vertexes, edges);
 }
 
-static int star(const std::vector<std::string> &lines, bool isStar2) {
+static void DFS(const std::vector<Vertex> &vertexes,
+                const std::vector<std::vector<size_t>> &edges,
+                std::map<size_t, std::set<size_t>> &beacons,
+                size_t vIndex) {
+    const int MAX_HEIGHT = 9;
+    const auto &v = vertexes[vIndex];
+    if (v.height == MAX_HEIGHT) {
+        beacons[vIndex].insert(vIndex);
+    }
+    beacons[vIndex];
+
+    const auto &tos = edges.at(vIndex);
+    for (auto to: tos) {
+        if (beacons.count(to) == 0) {
+            DFS(vertexes, edges, beacons, to);
+        }
+        const auto newBeacons = beacons.at(to);
+        for (auto b: newBeacons) {
+            beacons[vIndex].insert(b);
+        }
+    }
+}
+
+static auto solveStar1(const std::vector<std::string> &lines) {
     auto [vertexes, edges] = makeGraph(lines);
-    const auto V = vertexes.size();
-
-    std::vector<int> weights(V);
-    std::queue<Vertex> q;
-
-    int result = 0;
-    for (auto v0 : vertexes) {
-        if (v0.height != 0) continue;
-        weights.assign(V, 0);
-        assert(q.empty());
-        q.emplace(v0);
-        weights[v0.index] = 1;
-        while (!q.empty()) {
-            auto v = q.front();
-            q.pop();
-            if (v.height == 9) {
-                result += weights[v.index];
-                assert(edges[v.index].empty());
-                continue;
-            }
-            for (auto iNeighbor : edges[v.index]) {
-                if (weights[iNeighbor] == 0) {
-                    q.push(vertexes[iNeighbor]);
-                    weights[iNeighbor] += weights[v.index];
-                } else if (isStar2) {
-                    weights[iNeighbor] += weights[v.index];
-                }
-            }
+    std::map<size_t, std::set<size_t>> beacons;
+    size_t result = 0;
+    for (size_t i = 0; i < vertexes.size(); ++i) {
+        assert(vertexes[i].index == i);
+        if (vertexes[i].height == 0) {
+            DFS(vertexes, edges, beacons, i);
+            result += beacons.at(i).size();
         }
     }
     return result;
 }
 
-static int solve(const std::string &filename, bool isStar2) {
+static auto solveStar2(const std::vector<std::string> &lines) {
+    auto [vertexes, edges] = makeGraph(lines);
+    std::map<size_t, std::vector<Vertex>> heightToVertex;
+    for (auto v: vertexes) {
+        heightToVertex[v.height].push_back(v);
+    }
+
+    std::vector<int> weights(vertexes.size());
+    for (const auto &[height, heightVertexes]: heightToVertex) {
+        if (height == heightToVertex.begin()->first) {
+            for (const auto &v: heightVertexes) {
+                weights[v.index] = 1;
+            }
+        }
+        for (const auto &v: heightVertexes) {
+            for (auto toIndex: edges[v.index]) {
+                weights[toIndex] += weights[v.index];
+            }
+        }
+    }
+
+    return std::accumulate(heightToVertex.rbegin()->second.cbegin(), heightToVertex.rbegin()->second.cend(), 0UL,
+                           [&weights](int init, const Vertex &v) {
+                               return init + weights[v.index];
+                           });
+}
+
+static auto solve(const std::string &filename, bool isStar2) {
     std::ifstream fin{filename};
     assert(fin.is_open());
-    auto lines = read_lines(fin);
-    return star(lines, isStar2);
+    auto lines = readLines(fin);
+    return isStar2 ? solveStar2(lines) : solveStar1(lines);
 }
 
 static void test_star1() {
@@ -120,7 +143,7 @@ static void test_star1() {
             {5, 36}
     };
 
-    for (auto [exampleIndex, expectedResult] : expectedResults) {
+    for (auto [exampleIndex, expectedResult]: expectedResults) {
         const auto actualResult = solve("example_input" + std::to_string(exampleIndex) + ".txt", false);
         std::cout << exampleIndex << " -> " << actualResult << std::endl;
         assert(expectedResult == actualResult);
@@ -137,7 +160,7 @@ static void test_star2() {
             {5, 81},
     };
 
-    for (auto [exampleIndex, expectedResult] : expectedResults) {
+    for (auto [exampleIndex, expectedResult]: expectedResults) {
         const auto actualResult = solve("example_input" + std::to_string(exampleIndex) + ".txt", true);
         std::cout << exampleIndex << " -> " << actualResult << std::endl;
         assert(expectedResult == actualResult);
