@@ -90,6 +90,26 @@ static int star1(const std::string &filepath) {
     return result;
 }
 
+// Modified field specially for star2
+static auto getNewLines(const std::vector<std::string> &lines, pii startPos) {
+    const auto n = static_cast<int>(lines.size());
+    const auto m = static_cast<int>(lines[0].size());
+    std::vector<std::string> newLines(n, std::string(2 * m, '.'));
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            if (lines[i][j] == 'O') {
+                newLines[i][2 * j + 0] = '[';
+                newLines[i][2 * j + 1] = ']';
+            } else {
+                newLines[i][2 * j + 0] = lines[i][j];
+                newLines[i][2 * j + 1] = lines[i][j];
+            }
+        }
+    }
+    startPos.second *= 2;
+    return std::make_tuple(newLines, startPos);
+}
+
 static auto measureDistances(const std::vector<std::string> &lines) {
     const auto n = static_cast<int>(lines.size());
     const auto m = static_cast<int>(lines[0].size());
@@ -109,27 +129,11 @@ static int star2(const std::string &filepath) {
     assert(fin.is_open());
     auto [lines, startPos] = readLines(fin);
     lines[startPos.first][startPos.second] = '.';
-    const auto n = static_cast<int>(lines.size());
-    const auto m = static_cast<int>(lines[0].size());
+    auto [newLines, newStartPos] = getNewLines(lines, startPos);
+    lines = newLines;
+    startPos = newStartPos;
 
-    {
-        std::vector<std::string> newLines(n, std::string(2 * m, '.'));
-        for (int i = 0; i < n; ++i) {
-            for (int j = 0; j < m; ++j) {
-                if (lines[i][j] == 'O') {
-                    newLines[i][2 * j + 0] = '[';
-                    newLines[i][2 * j + 1] = ']';
-                } else {
-                    newLines[i][2 * j + 0] = lines[i][j];
-                    newLines[i][2 * j + 1] = lines[i][j];
-                }
-            }
-        }
-        startPos.second *= 2;
-        lines = newLines;
-    }
-
-    auto isHurdle = [&](pii pNext) {
+    auto isObstacle = [&](pii pNext) {
         return lines[pNext.first][pNext.second] == '#';
     };
 
@@ -140,7 +144,7 @@ static int star2(const std::string &filepath) {
         for (auto dirChar: moves) {
             auto delta = dirToDelta.at(dirChar);
             pii pNext = addPoint(p, delta);
-            if (isHurdle(pNext)) continue;
+            if (isObstacle(pNext)) continue;
 
             if (lines[pNext.first][pNext.second] == '.') {
                 p = pNext;
@@ -151,7 +155,7 @@ static int star2(const std::string &filepath) {
                 while (lines[pBlock.first][pBlock.second] == ']' || lines[pBlock.first][pBlock.second] == '[') {
                     pBlock = addPoint(pBlock, delta);
                 }
-                if (isHurdle(pBlock)) continue;
+                if (isObstacle(pBlock)) continue;
                 while (pBlock != pNext) {
                     auto pPrevBlock = subtractPoint(pBlock, delta);
                     lines[pBlock.first][pBlock.second] = lines[pPrevBlock.first][pPrevBlock.second];
@@ -176,7 +180,7 @@ static int star2(const std::string &filepath) {
                     auto pNextBlock = addPoint(pBlock, delta);
                     auto pNextBlockRight = addPoint(pNextBlock, dirToDelta.at(RIGHT));
                     auto pNextBlockLeft = addPoint(pNextBlock, dirToDelta.at(LEFT));
-                    if (isHurdle(pNextBlock) || isHurdle(pNextBlockRight)) continue;
+                    if (isObstacle(pNextBlock) || isObstacle(pNextBlockRight)) continue;
                     if (lines[pNextBlock.first][pNextBlock.second] == '[') {
                         assert(lines[pNextBlock.first][pNextBlock.second + 1] == ']');
                         q.push(pNextBlock);
@@ -189,7 +193,8 @@ static int star2(const std::string &filepath) {
                         used.insert(pNextBlockLeft);
                     }
 
-                    if (lines[pNextBlockRight.first][pNextBlockRight.second] == '[' && used.count(pNextBlockRight) == 0) {
+                    if (lines[pNextBlockRight.first][pNextBlockRight.second] == '[' &&
+                        used.count(pNextBlockRight) == 0) {
                         assert(lines[pNextBlockRight.first][pNextBlockRight.second + 1] == ']');
                         q.push(pNextBlockRight);
                         used.insert(pNextBlockRight);
@@ -197,26 +202,34 @@ static int star2(const std::string &filepath) {
                 }
 
                 bool isGoodToPush = true;
-                for (auto pBlock : used) {
+                for (auto pBlock: used) {
                     auto pNextBlock = addPoint(pBlock, delta);
                     auto pNextBlockRight = addPoint(pNextBlock, dirToDelta.at(RIGHT));
-                    if (isHurdle(pNextBlock) || isHurdle(pNextBlockRight)) {
+                    if (isObstacle(pNextBlock) || isObstacle(pNextBlockRight)) {
                         isGoodToPush = false;
                         break;
                     }
                 }
                 if (!isGoodToPush) continue;
-                auto newLines = lines;
-                for (auto pBlock : used) {
-                    newLines[pBlock.first][pBlock.second] = '.';
-                    newLines[pBlock.first][pBlock.second + 1] = '.';
-                }
-                for (auto pBlock : used) {
+
+                // Passing through all the used blocks in the order by which no clashing between them happens.
+                std::vector<pii> usedBlocks(used.begin(), used.end());
+                std::sort(usedBlocks.begin(), usedBlocks.end(), [&dirChar](const pii &lhs, const pii &rhs) {
+                    if (dirChar == UP) {
+                        // higher blocks go first - they have the space already.
+                        return lhs.first < rhs.first;
+                    } else {
+                        return lhs.first > rhs.first;
+                    }
+                });
+
+                for (auto pBlock: usedBlocks) {
                     auto pNextBlock = addPoint(pBlock, delta);
-                    newLines[pNextBlock.first][pNextBlock.second] = lines[pBlock.first][pBlock.second];
-                    newLines[pNextBlock.first][pNextBlock.second + 1] = lines[pBlock.first][pBlock.second + 1];
+                    lines[pNextBlock.first][pNextBlock.second] = lines[pBlock.first][pBlock.second];
+                    lines[pNextBlock.first][pNextBlock.second + 1] = lines[pBlock.first][pBlock.second + 1];
+                    lines[pBlock.first][pBlock.second] = '.';
+                    lines[pBlock.first][pBlock.second + 1] = '.';
                 }
-                lines = newLines;
             }
             p = pNext;
         }
@@ -226,12 +239,12 @@ static int star2(const std::string &filepath) {
 }
 
 int main() {
-//    std::cout << star1("example_input1.txt") << std::endl;
-//    std::cout << star1("example_input2.txt") << std::endl;
+    std::cout << star1("example_input1.txt") << std::endl;
+    std::cout << star1("example_input2.txt") << std::endl;
     std::cout << star1("input.txt") << std::endl;
 
-//    std::cout << star2("example_input3.txt") << std::endl;
-//    std::cout << star2("example_input1.txt") << std::endl;
+    std::cout << star2("example_input3.txt") << std::endl;
+    std::cout << star2("example_input1.txt") << std::endl;
     std::cout << star2("input.txt") << std::endl;
 
     return 0;
