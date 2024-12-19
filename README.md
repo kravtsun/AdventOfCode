@@ -21,4 +21,5 @@ Advent of Code adventures in C++ adventofcode.com/
 - 2024/solution16 - C++
 - 2024/solution17 - C++
 - 2024/solution18 - C++
+- 2024/solution19 - C++
 
