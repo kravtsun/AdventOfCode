@@ -13,7 +13,6 @@ static const auto RIGHT = '>';
 static const auto DOWN = 'v';
 static const auto UP = '^';
 using pii = std::pair<int, int>;
-const pii INVALID_POINT{-1, -1};
 
 using Keypad = std::vector<std::string>;
 static const Keypad NUMERIC_KEYPAD = {
@@ -28,20 +27,13 @@ static const Keypad DIRECTIONAL_KEYPAD = {
         "<v>",
 };
 
-static auto getSymbolPosition(const Keypad &keypad, const char symbol) {
-    pii symbolPos;
-    for (int i = 0; i < keypad.size(); ++i) {
-        if (auto pos = keypad[i].find(symbol); pos != std::string::npos) {
-            symbolPos = pii{i, static_cast<int>(pos)};
-        }
-    }
-    assert(symbolPos != INVALID_POINT);
-    return symbolPos;
-}
+static const char SYMBOL_PUSH = 'A';
+static const char SYMBOL_SPACE = ' ';
 
 static auto possibleMovements(const pii &spacePos, const pii &pFrom, const pii &pTo) {
     auto verticalMovement = std::string(std::abs(pFrom.first - pTo.first), pTo.first > pFrom.first ? DOWN : UP);
-    auto horizontalMovement = std::string(std::abs(pFrom.second - pTo.second), pTo.second > pFrom.second ? RIGHT : LEFT);
+    auto horizontalMovement = std::string(std::abs(pFrom.second - pTo.second),
+                                          pTo.second > pFrom.second ? RIGHT : LEFT);
 
     std::vector<std::string> movements;
     std::string wholeMovement;
@@ -73,7 +65,7 @@ static auto possibleMovements(const pii &spacePos, const pii &pFrom, const pii &
         movements.pop_back();
     }
     std::transform(movements.begin(), movements.end(), movements.begin(), [](const std::string &movement) {
-        return movement + "A";
+        return movement + std::string(1, SYMBOL_PUSH);
     });
     return movements;
 }
@@ -82,10 +74,9 @@ static auto possibleMovements(const pii &spacePos, const pii &pFrom, const pii &
 using Movement = std::string;
 // represents ends of the movement - start and finish
 using PointsPair = std::pair<pii, pii>;
-using Movements = std::map<PointsPair, std::vector<Movement>>;
 
 static auto calculateAllMovements(const pii &spacePos, const Keypad &keypad) {
-    Movements result;
+    std::map<PointsPair, std::vector<Movement>> result;
     for (int iFrom = 0; iFrom < keypad.size(); ++iFrom) {
         for (int jFrom = 0; jFrom < keypad[0].size(); ++jFrom) {
             pii pFrom{iFrom, jFrom};
@@ -109,119 +100,91 @@ static auto calculateAllMovements(const pii &spacePos, const Keypad &keypad) {
     return result;
 }
 
-template<bool OnlyStringSizeMatters>
-struct KeypadState {
-    pii lastPos;
-    std::string bestStringSoFar;
-
-    friend bool operator<(const KeypadState &lhs, const KeypadState &rhs) {
-        if (lhs.lastPos != rhs.lastPos) {
-            return lhs.lastPos < rhs.lastPos;
-        }
-        if constexpr (OnlyStringSizeMatters) {
-            // We do not need to have all possible strings of given length leading to lastPos being as it is.
-            if (lhs.bestStringSoFar.back() != rhs.bestStringSoFar.back()) {
-                return lhs.bestStringSoFar.back() < rhs.bestStringSoFar.back();
-            }
-            return lhs.bestStringSoFar.size() < rhs.bestStringSoFar.size();
-        } else {
-            // We need to keep all the strings present, because the can influence movements on lower levels:
-            // numeric -> directional1 -> directional2
-            return lhs.bestStringSoFar < rhs.bestStringSoFar;
+static auto calculateAllSymbolPositions(const Keypad &keypad) {
+    std::map<char, pii> result;
+    for (int i = 0; i < keypad.size(); ++i) {
+        for (int j = 0; j < keypad[i].size(); ++j) {
+            result[keypad[i][j]] = pii{i, j};
         }
     }
-};
+    return result;
+}
 
-const auto SPACE_POS_NUMERIC = getSymbolPosition(NUMERIC_KEYPAD, ' ');
-const auto SPACE_POS_DIRECTIONAL = getSymbolPosition(DIRECTIONAL_KEYPAD, ' ');
+static std::map<std::tuple<char, char, int, int>, int64_t> memo;
 
-static auto star1(const std::string &filepath) {
-    // pre-calculate all state transitions for robot before the numeric keypad
-    // lastPos, string-increase
-    const auto allNumericMovements = calculateAllMovements(SPACE_POS_NUMERIC, NUMERIC_KEYPAD);
-    const auto allDirectionalMovements = calculateAllMovements(SPACE_POS_DIRECTIONAL, DIRECTIONAL_KEYPAD);
+static int64_t solveRecursive(char previousCode, char nextCode, int level, const int maxLevel) {
+    static const auto numericSymbolPositions = calculateAllSymbolPositions(NUMERIC_KEYPAD);
+    static const auto directionalSymbolPositions = calculateAllSymbolPositions(DIRECTIONAL_KEYPAD);
+    static const auto allNumericMovements = calculateAllMovements(numericSymbolPositions.at(SYMBOL_SPACE),
+                                                                  NUMERIC_KEYPAD);
+    static const auto allDirectionalMovements = calculateAllMovements(directionalSymbolPositions.at(SYMBOL_SPACE),
+                                                                      DIRECTIONAL_KEYPAD);
 
-    using NumericKeypadState = KeypadState<false>;
-    using Directional1KeypadState = KeypadState<false>;
-    using Directional2KeypadState = KeypadState<true>;
+    const auto inputParameters = std::make_tuple(previousCode, nextCode, level, maxLevel);
+    auto memoIt = memo.find(inputParameters);
+    if (memoIt != memo.end()) {
+        return memoIt->second;
+    }
 
-    using AllKeypadsState = std::tuple<NumericKeypadState, Directional1KeypadState, Directional2KeypadState>;
+    const auto &symbolPositions = level == 0 ? numericSymbolPositions : directionalSymbolPositions;
+    const PointsPair movementsPair{symbolPositions.at(previousCode), symbolPositions.at(nextCode)};
+    const std::vector<std::string> &movements = level == 0 ?
+                                                allNumericMovements.at(movementsPair) :
+                                                allDirectionalMovements.at(movementsPair);
 
+    int64_t bestMovementResult = std::numeric_limits<int64_t>::max();
+
+    for (const auto &movement: movements) {
+        int64_t currentMovementResult = 0;
+        if (level == maxLevel) {
+            currentMovementResult = static_cast<int>(movement.size());
+            assert(movement.back() == SYMBOL_PUSH);
+        } else {
+            char previousMove = SYMBOL_PUSH;
+            for (auto move: movement) {
+                currentMovementResult += solveRecursive(previousMove, move, level + 1, maxLevel);
+                previousMove = move;
+            }
+            assert(previousMove == SYMBOL_PUSH);
+        }
+        if (currentMovementResult < bestMovementResult) {
+            bestMovementResult = currentMovementResult;
+        }
+    }
+    memo.insert(memoIt, {inputParameters, bestMovementResult});
+    return bestMovementResult;
+}
+
+static auto solve(const std::string &filepath, const int maxLevel) {
     std::ifstream fin{filepath};
     assert(fin.is_open());
     std::string line;
 
-    int result = 0;
+    int64_t result = 0;
     while (std::getline(fin, line)) {
-        NumericKeypadState numericStartState{getSymbolPosition(NUMERIC_KEYPAD, 'A'), ""};
-        Directional1KeypadState directional1StartState{getSymbolPosition(DIRECTIONAL_KEYPAD, 'A'), ""};
-        Directional2KeypadState directional2StartState{getSymbolPosition(DIRECTIONAL_KEYPAD, 'A'), ""};
-        std::set<AllKeypadsState> states;
-        states.insert({numericStartState, directional1StartState, directional2StartState});
-
-        for (auto numericCode: line) {
-            std::set<AllKeypadsState> nextStates;
-            auto numericPos = getSymbolPosition(NUMERIC_KEYPAD, numericCode);
-            for (const auto &state: states) {
-                const auto &[numericState, directional1State, directional2State] = state;
-                auto numericMovements = allNumericMovements.at(std::make_pair(numericState.lastPos, numericPos));
-                for (const auto &numericMovement: numericMovements) {
-                    using DirectionalKeypadStates = std::tuple<Directional1KeypadState, Directional2KeypadState>;
-                    std::set<DirectionalKeypadStates> currentDirectional12States{{directional1State, directional2State}};
-                    for (auto numericMove: numericMovement) {
-                        auto directional1Pos = getSymbolPosition(DIRECTIONAL_KEYPAD, numericMove);
-                        std::set<DirectionalKeypadStates> nextDirectional12States;
-                        for (const auto &[currentDirectional1State, currentDirectional2State]: currentDirectional12States) {
-                            auto directional1Movements = allDirectionalMovements.at(std::make_pair(currentDirectional1State.lastPos, directional1Pos));
-                            for (const auto &directional1Movement: directional1Movements) {
-                                std::set<Directional2KeypadState> currentDirectional2States = {currentDirectional2State};
-                                for (auto directional1Move : directional1Movement) {
-                                    auto directional2Pos = getSymbolPosition(DIRECTIONAL_KEYPAD, directional1Move);
-                                    std::set<Directional2KeypadState> nextDirectional2States;
-                                    for (const auto& currentDirectional2InnerState : currentDirectional2States) {
-                                        auto directional2Movements = allDirectionalMovements.at(std::make_pair(currentDirectional2InnerState.lastPos, directional2Pos));
-                                        for (const auto& directional2Movement : directional2Movements) {
-                                            Directional2KeypadState nextDirectional2State{directional2Pos, currentDirectional2InnerState.bestStringSoFar + directional2Movement};
-                                            nextDirectional2States.insert(nextDirectional2State);
-                                        }
-                                    }
-                                    currentDirectional2States = nextDirectional2States;
-                                }
-                                Directional1KeypadState newDirectional1State{directional1Pos, currentDirectional1State.bestStringSoFar + directional1Movement};
-                                for (const auto& currentDirectional2InnerState : currentDirectional2States) {
-                                    nextDirectional12States.emplace(newDirectional1State, currentDirectional2InnerState);
-                                }
-                            }
-                        }
-                        currentDirectional12States = nextDirectional12States;
-                    }
-
-                    NumericKeypadState newNumericState{numericPos, numericState.bestStringSoFar + numericMovement};
-                    for (const auto &[currentDirectional1State, currentDirectional2State]: currentDirectional12States) {
-                        nextStates.emplace(newNumericState, currentDirectional1State, currentDirectional2State);
-                    }
-                }
-            }
-            states = nextStates;
+        int64_t lineResult = 0;
+        char prevCode = SYMBOL_PUSH;
+        for (auto code: line) {
+            lineResult += solveRecursive(prevCode, code, 0, maxLevel);
+            prevCode = code;
         }
-
-        int bestResult = -1;
-        std::string bestString;
-        for (const auto &state: states) {
-            const auto &[numericState, directional1State, directional2State] = state;
-            if (bestResult == -1 || bestString.size() > directional2State.bestStringSoFar.size()) {
-                bestString = directional2State.bestStringSoFar;
-                bestResult = static_cast<int>(bestString.size());
-            }
-        }
-
-        result += std::stoi(line.substr(0, line.size() - 1)) * bestResult;
+        result += std::stoi(line.substr(0, line.size() - 1)) * lineResult;
     }
     return result;
+}
+
+static auto star1(const std::string &filepath) {
+    return solve(filepath, 2);
+}
+
+static auto star2(const std::string &filepath) {
+    return solve(filepath, 25);
 }
 
 int main() {
     std::cout << star1("example_input.txt") << std::endl;
     std::cout << star1("input.txt") << std::endl;
+    std::cout << star2("input.txt") << std::endl;
+
     return 0;
 }
