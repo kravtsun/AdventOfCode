@@ -1,112 +1,112 @@
 import java.io.File
 import java.util.*
 
-typealias PII = Pair<Int, Int>;
+typealias Point = Pair<Int, Int>
 
 fun isGoodCoordinate(x: Int, n: Int): Boolean {
-    return x in 0..<n;
+    return x in 0..<n
 }
 
-fun isGoodPoint(p: PII, n: Int, m: Int): Boolean {
-    return isGoodCoordinate(p.first, n) && isGoodCoordinate(p.second, m);
+fun isGoodPoint(p: Point, n: Int, m: Int): Boolean {
+    return isGoodCoordinate(p.first, n) && isGoodCoordinate(p.second, m)
 }
 
-operator fun PII.minus(rhs: PII): PII {
-    return PII(first - rhs.first, second - rhs.second);
+operator fun Point.minus(rhs: Point): Point {
+    return Point(first - rhs.first, second - rhs.second)
 }
 
-operator fun PII.plus(rhs: PII): PII {
-    return PII(first + rhs.first, second + rhs.second);
+operator fun Point.plus(rhs: Point): Point {
+    return Point(first + rhs.first, second + rhs.second)
 }
 
-fun readSignalToPositions(lines: List<String>): Map<Char, List<PII>> {
-    val n = lines.size;
-    val m = lines[0].length;
+fun readSignalToPositions(lines: List<String>): Map<Char, List<Point>> {
+    val n = lines.size
+    val m = lines[0].length
 
-    val signalToPositions = TreeMap<Char, MutableList<PII>>();
+    val signalToPositions = TreeMap<Char, MutableList<Point>>()
 
     for (i in 0..<n) {
         for (j in 0..<m) {
-            val c = lines[i][j];
+            val c = lines[i][j]
             if (c != '.') {
                 if (!signalToPositions.containsKey(c)) {
-                    signalToPositions[c] = mutableListOf();
+                    signalToPositions[c] = mutableListOf()
                 }
 
-                signalToPositions[c]!!.add(Pair(i, j));
+                signalToPositions[c]!!.add(Pair(i, j))
             }
         }
     }
-    return signalToPositions;
+    return signalToPositions
 }
 
-// 14, 308
-fun star1(lines: List<String>): Int {
-    val n = lines.size;
-    val m = lines[0].length;
+fun star1(filepath: String): Int {
+    val lines = File(filepath).readLines()
+    val n = lines.size
+    val m = lines[0].length
 
-    val signalToPositions = readSignalToPositions(lines);
+    val signalToPositions = readSignalToPositions(lines)
 
-    val pairComparator = compareBy<PII>({it.first}, {it.second});
-    val results = TreeSet(pairComparator);
+    val pairComparator = compareBy<Point>({it.first}, {it.second})
+    val results = TreeSet(pairComparator)
 
     for ((_, positions) in signalToPositions) {
         for (i in positions.indices) {
             for (j in positions.indices) {
-                if (i == j) continue;
-                val delta = positions[j] - positions[i];
-                val pointAfterJ = positions[j] + delta;
-                val pointBeforeI = positions[i] - delta;
+                if (i == j) continue
+                val delta = positions[j] - positions[i]
+                val pointAfterJ = positions[j] + delta
+                val pointBeforeI = positions[i] - delta
                 if (isGoodPoint(pointAfterJ, n, m)) {
-                    results.add(pointAfterJ);
+                    results.add(pointAfterJ)
                 }
                 if (isGoodPoint(pointBeforeI, n, m)) {
-                    results.add(pointBeforeI);
+                    results.add(pointBeforeI)
                 }
             }
         }
     }
-    return results.size;
+    return results.size
 }
 
-// 34, 1147
-fun star2(lines: List<String>): Int {
-    val n = lines.size;
-    val m = lines[0].length;
+fun star2(filepath: String): Int {
+    val lines = File(filepath).readLines()
+    val n = lines.size
+    val m = lines[0].length
 
-    val signalToPositions = readSignalToPositions(lines);
+    val signalToPositions = readSignalToPositions(lines)
 
-    val pairComparator = compareBy<PII>({it.first}, {it.second});
-    val results = TreeSet(pairComparator);
+    val pairComparator = compareBy<Point>({it.first}, {it.second})
+    val results = TreeSet(pairComparator)
 
     for ((_, positions) in signalToPositions) {
-        val signalResults = TreeSet(pairComparator);
+        val signalResults = TreeSet(pairComparator)
         for (i in positions.indices) {
             for (j in positions.indices) {
-                if (i == j) continue;
-                val delta = positions[j] - positions[i];
+                if (i == j) continue
+                val delta = positions[j] - positions[i]
 
-                var p = positions[i];
+                var p = positions[i]
                 while (isGoodPoint(p, n, m)) {
-                    signalResults.add(p);
-                    p -= delta;
+                    signalResults.add(p)
+                    p -= delta
                 }
 
-                p = positions[j];
+                p = positions[j]
                 while (isGoodPoint(p, n, m)) {
-                    signalResults.add(p);
-                    p += delta;
+                    signalResults.add(p)
+                    p += delta
                 }
             }
         }
-        results.addAll(signalResults);
+        results.addAll(signalResults)
     }
-    return results.size;
+    return results.size
 }
 
 fun main() {
-//    val lines = File("example_input.txt").readLines()
-    val lines = File("input.txt").readLines()
-//    println(star1(lines));
-    println(star2(lines));
+    println(star1("example_input.txt")) // 14
+    println(star1("input.txt")) // 308
+    println(star2("example_input.txt")) // 34
+    println(star2("input.txt")) // 1147
 }

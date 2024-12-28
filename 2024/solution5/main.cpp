@@ -7,13 +7,19 @@
 #include <set>
 #include <algorithm>
 
-// returns shouldComeBefore, nums_of_nums
-static std::tuple<std::map<int, std::set<int>>, std::vector<std::vector<int>>> inputs(const std::string &filename) {
+// x -> set of numbers y, such as (x, y) was present in input,
+// that is y (member of the set<int>) should come before x - key.
+using ShouldComeBefore = std::map<int, std::set<int>>;
+using PageNumbers = std::vector<int>;
+using NumberUpdates = std::vector<PageNumbers>;
+
+// returns shouldComeBefore, numberUpdates
+static auto readInputs(const std::string &filename) {
     std::ifstream fin{filename};
     assert(fin.is_open());
     std::string line;
 
-    std::map<int, std::set<int>> shouldComeBefore;
+    ShouldComeBefore shouldComeBefore;
     while (std::getline(fin, line)) {
         if (line.empty()) break;
         std::istringstream is{line};
@@ -24,46 +30,45 @@ static std::tuple<std::map<int, std::set<int>>, std::vector<std::vector<int>>> i
         shouldComeBefore[b].insert(a);
     }
 
-    std::vector<std::vector<int>> nums_of_nums;
+    NumberUpdates numberUpdates;
     while (std::getline(fin, line)) {
         for (auto &c: line) {
             if (c == ',') c = ' ';
         }
         std::istringstream is{line};
         int num;
-        std::vector<int> nums;
+        PageNumbers nums;
         while (is >> num) {
             nums.push_back(num);
         }
-        nums_of_nums.push_back(nums);
+        numberUpdates.push_back(nums);
     }
-    return std::make_tuple(shouldComeBefore, nums_of_nums);
+    return std::make_tuple(shouldComeBefore, numberUpdates);
 }
 
-static bool is_good_nums(const std::map<int, std::set<int>> &shouldComeBefore, const std::vector<int> &nums) {
-    std::set<int> excluded_nums;
+static bool isGoodNumbers(const ShouldComeBefore &shouldComeBefore, const PageNumbers &nums) {
+    std::set<int> excludedNums;
     bool isGood = true;
     for (auto b: nums) {
-        if (excluded_nums.count(b)) {
+        if (excludedNums.count(b)) {
             isGood = false;
             break;
         }
         if (shouldComeBefore.count(b)) {
             const auto &shouldComeBeforeThis = shouldComeBefore.at(b);
             for (auto a: shouldComeBeforeThis) {
-                excluded_nums.insert(a);
+                excludedNums.insert(a);
             }
         }
     }
     return isGood;
 }
 
-// 143, 4185
-static int
-star1(const std::map<int, std::set<int>> &shouldComeBefore, const std::vector<std::vector<int>> &nums_of_nums) {
+static auto star1(const std::string &filepath) {
+    auto [shouldComeBefore, numberUpdates] = readInputs(filepath);
     int result = 0;
-    for (auto const &nums: nums_of_nums) {
-        bool isGood = is_good_nums(shouldComeBefore, nums);
+    for (auto const &nums: numberUpdates) {
+        bool isGood = isGoodNumbers(shouldComeBefore, nums);
         if (isGood) {
             assert(nums.size() % 2 == 1);
             result += nums[nums.size() / 2];
@@ -72,23 +77,22 @@ star1(const std::map<int, std::set<int>> &shouldComeBefore, const std::vector<st
     return result;
 }
 
-// 123, 4480
-static int
-star2(const std::map<int, std::set<int>> &shouldComeBefore, const std::vector<std::vector<int>> &nums_of_nums) {
-    const auto a_should_be_before_b = [&shouldComeBefore](int a, int b) {
-        auto shouldComeBefore_b = shouldComeBefore.find(b);
-        return shouldComeBefore_b != shouldComeBefore.end() && shouldComeBefore_b->second.count(a);
+static auto star2(const std::string &filepath) {
+    auto [shouldComeBefore, numberUpdates] = readInputs(filepath);
+    const auto firstShouldComeBeforeSecond = [&shouldComeBefore](int first, int second) {
+        auto shouldComeBeforeB = shouldComeBefore.find(second);
+        return shouldComeBeforeB != shouldComeBefore.end() && shouldComeBeforeB->second.count(first);
     };
     int result = 0;
-    for (auto nums: nums_of_nums) {
-        if (is_good_nums(shouldComeBefore, nums)) continue;
+    for (auto nums: numberUpdates) {
+        if (isGoodNumbers(shouldComeBefore, nums)) continue;
 
-        std::stable_sort(nums.begin(), nums.end(), [&a_should_be_before_b](int lhs, int rhs) {
-            if (a_should_be_before_b(lhs, rhs)) {
+        std::stable_sort(nums.begin(), nums.end(), [&firstShouldComeBeforeSecond](int lhs, int rhs) {
+            if (firstShouldComeBeforeSecond(lhs, rhs)) {
                 return false; // rhs should come before lhs, therefore rhs < lhs
             }
 
-            if (a_should_be_before_b(rhs, lhs)) {
+            if (firstShouldComeBeforeSecond(rhs, lhs)) {
                 return true; // lhs should come before rhs, therefore lhs < rhs
             }
 
@@ -102,9 +106,9 @@ star2(const std::map<int, std::set<int>> &shouldComeBefore, const std::vector<st
 }
 
 int main() {
-//    auto [shouldComeBefore, nums_of_nums] = inputs("example_input.txt");
-    auto [shouldComeBefore, nums_of_nums] = inputs("input.txt");
-
-    std::cout << star2(shouldComeBefore, nums_of_nums) << std::endl;
+    std::cout << star1("example_input.txt") << std::endl; // 143
+    std::cout << star1("input.txt") << std::endl; // 4185
+    std::cout << star2("example_input.txt") << std::endl; // 123
+    std::cout << star2("input.txt") << std::endl; // 4480
     return 0;
 }

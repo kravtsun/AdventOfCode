@@ -3,14 +3,14 @@ Advent of Code adventures in C++ adventofcode.com/
 
 # 2024 Languages by folder
 
-- 2024/solution1 - Python3
-- 2024/solution2 - Java
+- 2024/solution1 - Python3: run with `python3 main.py`
+- 2024/solution2 - Java-11: compile with `javac -source 8 -target 8 src/Main.java` and run with `java -cp src Main`
 - 2024/solution3 - C++-17
 - 2024/solution4 - C++-17
-- 2024/solution5 - C++-17
+- 2024/solution5 - C++-20
 - 2024/solution6 - C++-17
-- 2024/solution7 - Haskell
-- 2024/solution8 - Kotlin
+- 2024/solution7 - Haskell: compile with `ghc ./main.hs` and run with `./main`
+- 2024/solution8 - Kotlin: just open Kotlin project in IDEA Community and run it, or: compile with `kotlinc src/Main.kt -include-runtime -d solution8.jar` and run with `java -jar solution8.jar`
 - 2025/solution9 - C++-17
 - 2024/solution10 - C++-17
 - 2024/solution11 - C++-17

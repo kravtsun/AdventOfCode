@@ -9,10 +9,18 @@ import static java.lang.Math.abs;
 
 public class Main {
     public static void main(String[] args) {
-//        processFile("example_input.txt", Main::isSafe1);
-//        processFile("input.txt", Main::isSafe1);
-//        processFile("example_input.txt", Main::isSafe2);
-        processFile("input.txt", Main::isSafe2);
+        star1("example_input.txt"); // 2
+        star1("input.txt"); // 314
+        star2("example_input.txt"); // 4
+        star2("input.txt"); // 373
+    }
+
+    public static void star1(String filepath) {
+        processFile(filepath, Main::isSafe1);
+    }
+
+    public static void star2(String filepath) {
+        processFile(filepath, Main::isSafe2);
     }
 
     static private void processFile(String filepath, Predicate<int[]> isSafe) {
@@ -20,7 +28,7 @@ public class Main {
             String line;
             int safeCount = 0;
             while ((line = reader.readLine()) != null) {
-                if (line.isBlank()) break;
+                if (line.isEmpty()) break;
                 String[] tokens = line.split(" ");
                 int[] array = Arrays.stream(tokens).mapToInt(Integer::parseInt).toArray();
                 if (isSafe.test(array)) {

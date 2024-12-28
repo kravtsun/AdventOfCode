@@ -7,21 +7,20 @@
 #include <cassert>
 #include <set>
 
-using pii = std::pair<int, int>;
+using Point = std::pair<int, int>;
 
-static bool isGoodCoordinate(int x, int n) {
-    return 0 <= x && x < n;
-}
-
-static bool isGoodPoint(pii p, int n, int m) {
+static bool isGoodPoint(const Point &p, int n, int m) {
+    static constexpr auto isGoodCoordinate = [](int x, int n) {
+        return 0 <= x && x < n;
+    };
     return isGoodCoordinate(p.first, n) && isGoodCoordinate(p.second, m);
 }
 
-static pii addPoint(const pii &lhs, const pii &rhs) {
+static Point addPoint(const Point &lhs, const Point &rhs) {
     return std::make_pair(lhs.first + rhs.first, lhs.second + rhs.second);
 }
 
-static pii subtractPoint(const pii &lhs, const pii &rhs) {
+static Point subtractPoint(const Point &lhs, const Point &rhs) {
     return std::make_pair(lhs.first - rhs.first, lhs.second - rhs.second);
 }
 
@@ -29,15 +28,23 @@ static const auto LEFT = '<';
 static const auto RIGHT = '>';
 static const auto DOWN = 'v';
 static const auto UP = '^';
-static const std::array dirs = {LEFT, UP, RIGHT, DOWN};
-static const auto ndirs = static_cast<int>(dirs.size());
+static const std::array DIRS = {LEFT, UP, RIGHT, DOWN};
+static const auto NDIRS = DIRS.size();
 
-static const std::map<char, pii> dirToDelta = {
-        {LEFT,  {0,  -1}},
-        {RIGHT, {0,  1}},
-        {UP,    {-1, 0}},
-        {DOWN,  {1,  0}},
+static const std::array<Point, 4> DELTAS = {
+        Point{0, -1}, // LEFT
+        Point{-1, 0}, // UP
+        Point{0, 1},  // RIGHT
+        Point{1, 0},  // DOWN
 };
+
+static auto getDeltaIndex(const char delta) {
+    auto distance = std::distance(DIRS.begin(), std::find(DIRS.begin(), DIRS.end(), delta));
+    if (distance < 0 || distance >= DIRS.size()) {
+        throw std::runtime_error("Delta error");
+    }
+    return static_cast<size_t>(distance);
+}
 
 static auto readLines(const std::string &filepath) {
     std::ifstream fin{filepath};
@@ -48,10 +55,10 @@ static auto readLines(const std::string &filepath) {
         lines.push_back(line);
     }
 
-    pii start;
+    Point start;
     for (int i = 0; i < lines.size(); ++i) {
         bool found = false;
-        for (auto d: dirs) {
+        for (auto d: DIRS) {
             if (const auto pos = lines[i].find(d); pos != std::string::npos) {
                 start.first = i;
                 start.second = static_cast<int>(pos);
@@ -64,49 +71,41 @@ static auto readLines(const std::string &filepath) {
     return std::make_tuple(lines, start);
 }
 
-static int star1(std::vector<std::string> lines, pii start) {
+static auto star1(const std::string &filepath) {
+    auto [lines, start] = readLines(filepath);
     const int n = static_cast<int>(lines.size());
     const int m = static_cast<int>(lines[0].size());
 
     auto p = start;
-    const auto startPose = lines[p.first][p.second];
-    auto ipose = std::distance(dirs.begin(), std::find(dirs.begin(), dirs.end(), startPose));
-
-    auto delta = dirToDelta.at(dirs[ipose]);
+    const auto startDelta = lines[p.first][p.second];
+    auto kdir = getDeltaIndex(startDelta);
+    auto delta = DELTAS.at(kdir);
 
     while (true) {
         lines[p.first][p.second] = 'X';
-        pii next{p.first + delta.first, p.second + delta.second};
-        if (isGoodCoordinate(next.first, n) && isGoodCoordinate(next.second, m)) {
+        Point next{p.first + delta.first, p.second + delta.second};
+        if (isGoodPoint(next, n, m)) {
             if (lines[next.first][next.second] == '#') {
-                ipose = (ipose + 1) % ndirs;
-                delta = dirToDelta.at(dirs[ipose]);
+                kdir = (kdir + 1) % NDIRS;
+                delta = DELTAS.at(kdir);
                 next = addPoint(p, delta);
             }
-
             p = next;
         } else {
             break;
         }
     }
 
-    int result = 0;
+    size_t result = 0;
     for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < m; ++j) {
-            result += lines[i][j] == 'X';
-        }
+        result += std::count(lines[i].begin(), lines[i].end(), 'X');
     }
     return result;
 }
 
-static auto star1(const std::string &filepath) {
-    auto [lines, start] = readLines(filepath);
-    return star1(lines, start);
-}
-
 struct State {
-    pii p;
-    int dir{};
+    Point p;
+    size_t dir{};
 
     friend bool operator==(const State &lhs, const State &rhs) {
         return lhs.p == rhs.p && lhs.dir == rhs.dir;
@@ -126,33 +125,33 @@ struct State {
     }
 };
 
-const pii ESCAPING_POINT{-1, -1}; // This way we denote point of escaping.
-const State ESCAPING_STATE{ESCAPING_POINT, -1};
-const pii INVALID_POINT{std::numeric_limits<int>::max(), std::numeric_limits<int>::max()};
-const State INVALID_STATE{INVALID_POINT, -1};
+const Point ESCAPING_POINT{-1, -1}; // This way we denote point of escaping.
+const State ESCAPING_STATE{ESCAPING_POINT, 0};
+const Point INVALID_POINT{std::numeric_limits<int>::max(), std::numeric_limits<int>::max()};
+const State INVALID_STATE{INVALID_POINT, 0};
 
+// dirs, y-coordinate (Point::first), x-coordinate (Point::second)
 using States = std::vector<std::vector<std::vector<State>>>;
 
 static auto createGraph(const std::vector<std::string> &lines) {
     const auto n = static_cast<int>(lines.size());
     const auto m = static_cast<int>(lines[0].size());
-    // [ndirs][n][m] -> the closest point by given direction by first index
-    States nextStates(ndirs, std::vector<std::vector<State>>(n, std::vector<State>(m, INVALID_STATE)));
+    // [NDIRS][n][m] -> the closest point by given direction by first index
+    States nextStates(NDIRS, std::vector<std::vector<State>>(n, std::vector<State>(m, INVALID_STATE)));
 
-    const auto isFreePoint = [&lines](const pii &p, const int n, const int m) {
+    const auto isFreePoint = [&lines](const Point &p, const int n, const int m) {
         return isGoodPoint(p, n, m) && lines[p.first][p.second] == '.';
     };
 
-    for (int d = 0; d < ndirs; ++d) {
+    for (size_t d = 0; d < NDIRS; ++d) {
         for (int i = 0; i < n; ++i) {
             for (int j = 0; j < m; ++j) {
                 if (lines[i][j] == '.' && nextStates[d][i][j] == INVALID_STATE) {
-                    auto delta = dirToDelta.at(dirs[d]);
-                    pii startPoint{i, j};
-                    pii p = startPoint;
+                    auto delta = DELTAS.at(d);
+                    Point startPoint{i, j};
+                    Point p = startPoint;
                     for (; isFreePoint(p, n, m) && nextStates[d][p.first][p.second] == INVALID_STATE; p = addPoint(p,
                                                                                                                    delta));
-
                     // last point when the loop above ended
                     // - before we hit the field's borders, '#' or already visited cell
                     auto lastPoint = p;
@@ -162,8 +161,8 @@ static auto createGraph(const std::vector<std::string> &lines) {
                         // We hit the field's borders
                         nextState = ESCAPING_STATE;
                     } else if (lines[p.first][p.second] == '#') {
-                        pii finishPoint = subtractPoint(p, delta);
-                        nextState = State{finishPoint, (d + 1) % ndirs};
+                        Point finishPoint = subtractPoint(p, delta);
+                        nextState = State{finishPoint, (d + 1) % NDIRS};
                     } else {
                         assert(lines[p.first][p.second] == '.');
                         nextState = nextStates[d][p.first][p.second];
@@ -181,16 +180,16 @@ static auto createGraph(const std::vector<std::string> &lines) {
 }
 
 // returns set of updates to nextStates
-static auto putObstacle(int n, int m, const States &nextStates, const pii &obstacle) {
-    const auto isFreePointState = [&nextStates](int kdir, const pii &p, const int n, const int m) {
+static auto putObstacle(int n, int m, const States &nextStates, const Point &obstacle) {
+    const auto isFreePointState = [&nextStates](size_t kdir, const Point &p, const int n, const int m) {
         return isGoodPoint(p, n, m) && nextStates[kdir][p.first][p.second] != INVALID_STATE;
     };
     std::map<State, State> updates;
-    for (int kdir = 0; kdir < ndirs; ++kdir) {
+    for (size_t kdir = 0; kdir < NDIRS; ++kdir) {
         updates[State{obstacle, kdir}] = INVALID_STATE;
 
-        auto delta = dirToDelta.at(dirs[kdir]);
-        auto rotateKDir = (kdir + 1) % ndirs;
+        auto delta = DELTAS.at(kdir);
+        auto rotateKDir = (kdir + 1) % NDIRS;
         auto rotatePoint = subtractPoint(obstacle, delta);
         if (!isGoodPoint(rotatePoint, n, m)) continue;
 
@@ -219,24 +218,26 @@ hasLoop(const States &nextStates, const std::map<State, State> &nextStatesUpdate
     return false;
 }
 
-static int star2(std::vector<std::string> lines, pii start) {
+static auto star2(const std::string &filepath) {
+    auto [lines, start] = readLines(filepath);
     // build graph
     // each point around #, start point ^ should be connected
     // by placing '#' in a point '.' we need to introduce a new set of connected edges
-    const auto startDir = lines[start.first][start.second];
-    const auto dir = static_cast<int>(std::distance(dirs.begin(), std::find(dirs.begin(), dirs.end(), startDir)));
+    const auto startDelta = lines[start.first][start.second];
+    const auto kdir = getDeltaIndex(startDelta);
+    assert(kdir >= 0 && kdir < DIRS.size());
     lines[start.first][start.second] = '.';
 
     const auto nextStates = createGraph(lines);
-    const State startState{start, dir};
+    const State startState{start, static_cast<size_t>(kdir)};
 
     const int n = static_cast<int>(lines.size());
     const int m = static_cast<int>(lines[0].size());
     int result = 0;
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < m; ++j) {
-            if (lines[i][j] == '.' && pii{i, j} != start) {
-                auto nextStatesUpdates = putObstacle(n, m, nextStates, pii{i, j});
+            if (lines[i][j] == '.' && Point{i, j} != start) {
+                auto nextStatesUpdates = putObstacle(n, m, nextStates, Point{i, j});
                 if (hasLoop(nextStates, nextStatesUpdates, startState)) {
                     result++;
                 }
@@ -246,15 +247,10 @@ static int star2(std::vector<std::string> lines, pii start) {
     return result;
 }
 
-static auto star2(const std::string &filepath) {
-    auto [lines, start] = readLines(filepath);
-    return star2(lines, start);
-}
-
 int main() {
-    std::cout << star1("example_input.txt") << std::endl;
-    std::cout << star1("input.txt") << std::endl;
-    std::cout << star2("example_input.txt") << std::endl;
-    std::cout << star2("input.txt") << std::endl;
+    std::cout << star1("example_input.txt") << std::endl; // 41
+    std::cout << star1("input.txt") << std::endl; // 4374
+    std::cout << star2("example_input.txt") << std::endl; // 6
+    std::cout << star2("input.txt") << std::endl; // 1705
     return 0;
 }
