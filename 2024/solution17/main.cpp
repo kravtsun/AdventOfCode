@@ -235,6 +235,5 @@ int main() {
 
     std::cout << star2BruteForce("example_input2.txt", 1) << std::endl;
     std::cout << star2SpecificCase("input.txt") << std::endl;
-
     return 0;
 }

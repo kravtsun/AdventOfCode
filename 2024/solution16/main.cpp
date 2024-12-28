@@ -11,33 +11,32 @@ static const auto LEFT = '<';
 static const auto RIGHT = '>';
 static const auto DOWN = 'v';
 static const auto UP = '^';
-static const std::array dirs = {LEFT, UP, RIGHT, DOWN};
-static const auto ndirs = static_cast<int>(dirs.size());
-using pii = std::pair<int, int>;
-static const std::map<char, pii> dirToDelta = {
-        {LEFT,  {0,  -1}},
-        {RIGHT, {0,  1}},
-        {UP,    {-1, 0}},
-        {DOWN,  {1,  0}},
+static const std::array DIRS = {LEFT, UP, RIGHT, DOWN};
+static const auto NDIRS = DIRS.size();
+using Point = std::pair<int, int>;
+static const std::array<Point, NDIRS> DELTAS = {
+        Point{0, -1}, // LEFT
+        Point{-1, 0}, // UP
+        Point{0, 1}, // RIGHT
+        Point{1, 0}, // DOWN
 };
 
 
-using Edge = std::pair<int, pii>;
+using Edge = std::pair<size_t, Point>;
 using Cost = int64_t;
 const auto MAX_COST = std::numeric_limits<Cost>::max();
 // point, kdir
-using State = std::pair<pii, int>;
+using State = std::pair<Point, int>;
 using CostState = std::pair<Cost, State>;
 
-static pii addPoint(const pii &lhs, const pii &rhs) {
+static Point addPoint(const Point &lhs, const Point &rhs) {
     return std::make_pair(lhs.first + rhs.first, lhs.second + rhs.second);
 }
 
-static bool isGoodCoordinate(int x, int n) {
-    return 0 <= x && x < n;
-}
-
-static bool isGoodPoint(pii p, int n, int m) {
+static bool isGoodPoint(const Point &p, int n, int m) {
+    static constexpr auto isGoodCoordinate = [](int x, int n) {
+        return 0 <= x && x < n;
+    };
     return isGoodCoordinate(p.first, n) && isGoodCoordinate(p.second, m);
 }
 
@@ -48,12 +47,12 @@ static auto readInput(std::istream &fin) {
         lines.push_back(line);
     }
 
-    const auto findPos = [&lines](char c) -> pii {
-        pii outPos{-1, -1};
+    const auto findPos = [&lines](char c) -> Point {
+        Point outPos{-1, -1};
         for (int i = 0; i < lines.size(); ++i) {
             for (int j = 0; j < lines[0].size(); ++j) {
                 if (lines[i][j] == c) {
-                    outPos = pii{i, j};
+                    outPos = Point{i, j};
                     lines[i][j] = '.';
                     break;
                 }
@@ -73,13 +72,13 @@ static auto getEdges(const std::vector<std::string> &lines) {
     const auto m = static_cast<int>(lines[0].size());
 
     // kdir, whereTo
-    std::map<pii, std::vector<Edge>> edges;
+    std::map<Point, std::vector<Edge>> edges;
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < m; ++j) {
             if (lines[i][j] == '.') {
-                pii p{i, j};
-                for (int k = 0; k < ndirs; ++k) {
-                    auto pNext = addPoint(p, dirToDelta.at(dirs[k]));
+                Point p{i, j};
+                for (size_t k = 0; k < NDIRS; ++k) {
+                    auto pNext = addPoint(p, DELTAS[k]);
                     if (isGoodPoint(pNext, n, m) && lines[pNext.first][pNext.second] == '.') {
                         edges[p].emplace_back(k, pNext);
                     }
@@ -91,16 +90,17 @@ static auto getEdges(const std::vector<std::string> &lines) {
 }
 
 // returns reachCost, ancestors
-static auto dijkstra(const std::map<pii, std::vector<Edge>> &edges, pii startPos) {
+static auto dijkstra(const std::map<Point, std::vector<Edge>> &edges, Point startPos) {
     std::set<CostState> q;
+
+    auto startKdirIt = std::find(DIRS.begin(), DIRS.end(), RIGHT);
+    const auto startKdir = static_cast<int>(std::distance(DIRS.begin(), startKdirIt));
+    assert(startKdir < NDIRS);
+    auto startState = std::make_pair(startPos, startKdir);
+    q.emplace(0, startState);
 
     // point, dir -> cost
     std::map<State, Cost> reachCost;
-
-    const auto startKdir = static_cast<int>(std::distance(dirs.begin(), std::find(dirs.begin(), dirs.end(), RIGHT)));
-    assert(startKdir < ndirs);
-    auto startState = std::make_pair(startPos, startKdir);
-    q.emplace(0, startState);
     reachCost[startState] = 0;
 
     std::map<State, std::vector<State>> ancestors;
@@ -117,7 +117,7 @@ static auto dijkstra(const std::map<pii, std::vector<Edge>> &edges, pii startPos
             int rotateCost;
             if (kdirNext == kdir) {
                 rotateCost = 0;
-            } else if (kdirNext == (kdir + 2) % ndirs) {
+            } else if (kdirNext == (kdir + 2) % NDIRS) {
                 rotateCost = 2 * 1000;
             } else {
                 rotateCost = 1000;
@@ -142,9 +142,9 @@ static auto dijkstra(const std::map<pii, std::vector<Edge>> &edges, pii startPos
     return std::make_tuple(reachCost, ancestors);
 }
 
-static auto calculateBestCost(const std::map<State, Cost> &reachCost, pii finishPos) {
+static auto calculateBestCost(const std::map<State, Cost> &reachCost, Point finishPos) {
     Cost bestCost = MAX_COST;
-    for (int k = 0; k < ndirs; ++k) {
+    for (int k = 0; k < NDIRS; ++k) {
         auto finishState = std::make_pair(finishPos, k);
         if (reachCost.count(finishState)) {
             bestCost = std::min(bestCost, reachCost.at(finishState));
@@ -177,12 +177,12 @@ static auto star2(const std::string &filepath) {
 
     auto bestCost = calculateBestCost(reachCost, finishPos);
 
-    std::set<pii> usedTiles;
+    std::set<Point> usedTiles;
 
     std::set<State> usedStates;
     std::queue<State> q;
 
-    for (int k = 0; k < ndirs; ++k) {
+    for (int k = 0; k < NDIRS; ++k) {
         auto finishState = std::make_pair(finishPos, k);
         if (reachCost.count(finishState) && reachCost.at(finishState) == bestCost) {
             q.push(finishState);
@@ -209,15 +209,12 @@ static auto star2(const std::string &filepath) {
 }
 
 int main() {
-    // STAR1
-    std::cout << star1("example_input1.txt") << std::endl;
-    std::cout << star1("example_input2.txt") << std::endl;
-    std::cout << star1("input.txt") << std::endl;
+    std::cout << star1("example_input1.txt") << std::endl; // 7036
+    std::cout << star1("example_input2.txt") << std::endl; // 11048
+    std::cout << star1("input.txt") << std::endl; // 85480
 
-    // STAR2
-    std::cout << star2("example_input1.txt") << std::endl;
-    std::cout << star2("example_input2.txt") << std::endl;
-    std::cout << star2("input.txt") << std::endl;
-
+    std::cout << star2("example_input1.txt") << std::endl; // 45
+    std::cout << star2("example_input2.txt") << std::endl; // 64
+    std::cout << star2("input.txt") << std::endl; // 518
     return 0;
 }

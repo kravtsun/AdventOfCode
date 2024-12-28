@@ -6,7 +6,7 @@
 #include <set>
 #include <numeric>
 
-using pii = std::pair<int, int>;
+using Point = std::pair<int, int>;
 
 static auto readLines(std::istream &fin) {
     std::vector<std::string> lines;
@@ -18,8 +18,8 @@ static auto readLines(std::istream &fin) {
 }
 
 struct Vertex {
-    int i;
-    int j;
+    size_t i;
+    size_t j;
     size_t height;
     size_t index;
 
@@ -27,13 +27,13 @@ struct Vertex {
 };
 
 static auto makeGraph(const std::vector<std::string> &lines) {
-    const int n = static_cast<int>(lines.size());
-    const int m = static_cast<int>(lines[0].size());
+    const auto n = lines.size();
+    const auto m = lines[0].size();
     std::vector<Vertex> vertexes;
-    std::map<pii, size_t> pointToVertexIndex;
+    std::map<Point, size_t> pointToVertexIndex;
 
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < m; ++j) {
+    for (size_t i = 0; i < n; ++i) {
+        for (size_t j = 0; j < m; ++j) {
             if (!isdigit(lines[i][j])) continue;
             const auto vertexIndex = vertexes.size();
             vertexes.emplace_back(i, j, static_cast<size_t>(lines[i][j] - '0'), vertexIndex);
@@ -49,10 +49,10 @@ static auto makeGraph(const std::vector<std::string> &lines) {
     std::vector<std::vector<size_t>> edges(V);
     for (int iv = 0; iv < V; ++iv) {
         const auto &v = vertexes[iv];
-        const pii p{v.i, v.j};
+        const Point p{v.i, v.j};
 
         for (int k = 0; k < di.size(); ++k) {
-            pii pNeighbor{p.first + di[k], p.second + dj[k]};
+            Point pNeighbor{p.first + di[k], p.second + dj[k]};
             if (!pointToVertexIndex.count(pNeighbor)) continue;
             auto vNeighbor = vertexes[pointToVertexIndex.at(pNeighbor)];
             if (vNeighbor.height == v.height + 1) {
@@ -172,6 +172,5 @@ static void test_star2() {
 int main() {
     test_star1();
     test_star2();
-
     return 0;
 }

@@ -7,31 +7,24 @@
 #include <set>
 #include <cassert>
 
-static const auto LEFT = '<';
-static const auto RIGHT = '>';
-static const auto DOWN = 'v';
-static const auto UP = '^';
-static const std::array dirs = {LEFT, UP, RIGHT, DOWN};
-static const auto ndirs = static_cast<int>(dirs.size());
-using pii = std::pair<int, int>;
-const pii BAD_POINT = std::make_pair(-1, -1);
+using Point = std::pair<int, int>;
+const Point BAD_POINT{-1, -1};
 
-static bool isGoodCoordinate(int x, int n) {
-    return 0 <= x && x < n;
-}
-
-static bool isGoodPoint(pii p, int n, int m) {
+static bool isGoodPoint(const Point &p, int n, int m) {
+    static constexpr auto isGoodCoordinate = [](int x, int n) {
+        return 0 <= x && x < n;
+    };
     return isGoodCoordinate(p.first, n) && isGoodCoordinate(p.second, m);
 }
 
-static const std::map<char, pii> dirToDelta = {
-        {LEFT,  {0,  -1}},
-        {RIGHT, {0,  1}},
-        {UP,    {-1, 0}},
-        {DOWN,  {1,  0}},
+static const std::array DELTAS = {
+        Point{0, -1},
+        Point{0, 1},
+        Point{-1, 0},
+        Point{1, 0},
 };
 
-static pii addPoint(const pii &lhs, const pii &rhs) {
+static Point addPoint(const Point &lhs, const Point &rhs) {
     return std::make_pair(lhs.first + rhs.first, lhs.second + rhs.second);
 }
 
@@ -46,15 +39,14 @@ static auto readLines(const std::string &filepath) {
     }
 
     auto findSymbolPos = [&lines](int i, char symbol) {
-        auto pos = lines[i].find(symbol);
-        if (pos != std::string::npos) {
-            return pii{i, static_cast<int>(pos)};
+        if (auto pos = lines[i].find(symbol); pos != std::string::npos) {
+            return Point{i, static_cast<int>(pos)};
         } else {
             return BAD_POINT;
         }
     };
 
-    pii startPos = BAD_POINT, finishPos = BAD_POINT;
+    Point startPos = BAD_POINT, finishPos = BAD_POINT;
     for (int i = 0; i < lines.size(); ++i) {
         auto symbolPos = findSymbolPos(i, 'S');
         if (symbolPos != BAD_POINT) {
@@ -69,20 +61,19 @@ static auto readLines(const std::string &filepath) {
     return std::make_tuple(lines, startPos, finishPos);
 }
 
-static auto calculatePathAndPos(const std::vector<std::string> &lines, pii startPos, pii finishPos) {
+static auto calculatePath(const std::vector<std::string> &lines, Point startPos, Point finishPos) {
     const auto n = static_cast<int>(lines.size());
     const auto m = static_cast<int>(lines[0].size());
 
     // which position takes the cell in the race
-    std::map<pii, int> pos;
-    std::vector<pii> path;
+    std::map<Point, size_t> pos;
+    std::vector<Point> path;
     auto p = startPos;
     pos[p] = 0;
     path.push_back(p);
     for (int i = 0; p != finishPos; ++i) {
         auto nextPoint = BAD_POINT;
-        for (int kdir = 0; kdir < ndirs; ++kdir) {
-            auto delta = dirToDelta.at(dirs[kdir]);
+        for (auto delta: DELTAS) {
             auto pNext = addPoint(p, delta);
             if (isGoodPoint(pNext, n, m) && lines[pNext.first][pNext.second] == '.' && !pos.count(pNext)) {
                 nextPoint = pNext;
@@ -90,11 +81,11 @@ static auto calculatePathAndPos(const std::vector<std::string> &lines, pii start
             }
         }
         assert(nextPoint != BAD_POINT);
-        pos[nextPoint] = static_cast<int>(path.size());
+        pos[nextPoint] = path.size();
         path.push_back(nextPoint);
         p = nextPoint;
     }
-    return std::make_tuple(path, pos);
+    return path;
 }
 
 static auto cheatsSum(const std::map<int, size_t> &cheats, int saveThreshold) {
@@ -112,7 +103,7 @@ static auto solve(const std::string &filepath, int saveThreshold, int distanceTh
     lines[startPos.first][startPos.second] = '.';
     lines[finishPos.first][finishPos.second] = '.';
 
-    auto [path, pos] = calculatePathAndPos(lines, startPos, finishPos);
+    auto path = calculatePath(lines, startPos, finishPos);
 
     // seconds to save -> number of cheats
     std::map<int, size_t> cheats;
@@ -138,11 +129,10 @@ static auto star2(const std::string &filepath) {
 }
 
 int main() {
-    std::cout << star1("example_input.txt") << std::endl;
-    std::cout << star1("input.txt") << std::endl;
+    std::cout << star1("example_input.txt") << std::endl; // 44
+    std::cout << star1("input.txt") << std::endl; // 1530
 
-    std::cout << star2("example_input.txt") << std::endl;
-    std::cout << star2("input.txt") << std::endl;
-
+    std::cout << star2("example_input.txt") << std::endl; // 3081
+    std::cout << star2("input.txt") << std::endl; // 1033983
     return 0;
 }

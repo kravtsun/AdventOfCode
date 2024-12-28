@@ -34,7 +34,7 @@ std::vector<NumberCount> readFiles(const std::string &line) {
 uint64_t hashsum(const std::vector<NumberCount> &resultMas) {
     size_t index = 0;
     uint64_t resultSum = 0;
-    for (auto [num, cnt] : resultMas) {
+    for (auto [num, cnt]: resultMas) {
         if (num == -1) {
             index += cnt;
             continue;
@@ -46,14 +46,22 @@ uint64_t hashsum(const std::vector<NumberCount> &resultMas) {
     return resultSum;
 }
 
-// 6'346'871'685'398
-uint64_t star1(const std::string &line) {
+static auto readLine(const std::string &filepath) {
+    std::ifstream fin{filepath};
+    assert(fin.is_open());
+    std::string line;
+    std::getline(fin, line);
+    return line;
+}
+
+static auto star1(const std::string &filepath) {
+    auto line = readLine(filepath);
     auto mas = readFiles(line);
     std::vector<NumberCount> resultMas;
     auto rit = mas.rbegin();
     if (rit->number == -1) ++rit;
 
-    for (auto [num, cnt] : mas) {
+    for (auto [num, cnt]: mas) {
         if (num != -1) {
             resultMas.emplace_back(num, cnt);
             if (rit != mas.rend() && rit->number <= num) break;
@@ -77,8 +85,8 @@ uint64_t star1(const std::string &line) {
     return hashsum(resultMas);
 }
 
-// 2858, 6'373'055'193'464
-uint64_t star2(const std::string &line) {
+static auto star2(const std::string &filepath) {
+    auto line = readLine(filepath);
     auto mas = readFiles(line);
 
     // blockCount -> indexes
@@ -87,7 +95,7 @@ uint64_t star2(const std::string &line) {
     std::vector<NumberCount> blocks;
     std::vector<size_t> blockIndex;
     size_t index = 0;
-    for (auto [num, cnt] : mas) {
+    for (auto [num, cnt]: mas) {
         if (num != -1) {
             blocks.emplace_back(num, cnt);
             blockIndex.push_back(index);
@@ -139,14 +147,9 @@ uint64_t star2(const std::string &line) {
 }
 
 int main() {
-//    std::ifstream fin{"example_input.txt"};
-    std::ifstream fin{"input.txt"};
-    assert(fin.is_open());
-    std::string line;
-    std::getline(fin, line);
-
-//    std::cout << star1(line) << std::endl;
-    std::cout << star2(line) << std::endl;
-
+    std::cout << star1("example_input.txt") << std::endl; // 1928
+    std::cout << star1("input.txt") << std::endl; // 6346871685398
+    std::cout << star2("example_input.txt") << std::endl; // 2858
+    std::cout << star2("input.txt") << std::endl; // 6373055193464
     return 0;
 }

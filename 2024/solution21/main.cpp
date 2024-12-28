@@ -12,7 +12,7 @@ static const auto LEFT = '<';
 static const auto RIGHT = '>';
 static const auto DOWN = 'v';
 static const auto UP = '^';
-using pii = std::pair<int, int>;
+using Point = std::pair<int, int>;
 
 using Keypad = std::vector<std::string>;
 static const Keypad NUMERIC_KEYPAD = {
@@ -30,7 +30,7 @@ static const Keypad DIRECTIONAL_KEYPAD = {
 static const char SYMBOL_PUSH = 'A';
 static const char SYMBOL_SPACE = ' ';
 
-static auto possibleMovements(const pii &spacePos, const pii &pFrom, const pii &pTo) {
+static auto possibleMovements(const Point &spacePos, const Point &pFrom, const Point &pTo) {
     auto verticalMovement = std::string(std::abs(pFrom.first - pTo.first), pTo.first > pFrom.first ? DOWN : UP);
     auto horizontalMovement = std::string(std::abs(pFrom.second - pTo.second),
                                           pTo.second > pFrom.second ? RIGHT : LEFT);
@@ -73,17 +73,17 @@ static auto possibleMovements(const pii &spacePos, const pii &pFrom, const pii &
 // Movement - a path represented as an array of moves (LEFT, UP, RIGHT, DOWN).
 using Movement = std::string;
 // represents ends of the movement - start and finish
-using PointsPair = std::pair<pii, pii>;
+using PointsPair = std::pair<Point, Point>;
 
-static auto calculateAllMovements(const pii &spacePos, const Keypad &keypad) {
+static auto calculateAllMovements(const Point &spacePos, const Keypad &keypad) {
     std::map<PointsPair, std::vector<Movement>> result;
     for (int iFrom = 0; iFrom < keypad.size(); ++iFrom) {
         for (int jFrom = 0; jFrom < keypad[0].size(); ++jFrom) {
-            pii pFrom{iFrom, jFrom};
+            Point pFrom{iFrom, jFrom};
             if (pFrom == spacePos) continue;
             for (int iTo = 0; iTo < keypad.size(); ++iTo) {
                 for (int jTo = 0; jTo < keypad[0].size(); ++jTo) {
-                    pii pTo{iTo, jTo};
+                    Point pTo{iTo, jTo};
                     if (pTo == spacePos) continue;
 
                     PointsPair pFromTo{pFrom, pTo};
@@ -101,18 +101,18 @@ static auto calculateAllMovements(const pii &spacePos, const Keypad &keypad) {
 }
 
 static auto calculateAllSymbolPositions(const Keypad &keypad) {
-    std::map<char, pii> result;
+    std::map<char, Point> result;
     for (int i = 0; i < keypad.size(); ++i) {
         for (int j = 0; j < keypad[i].size(); ++j) {
-            result[keypad[i][j]] = pii{i, j};
+            result[keypad[i][j]] = Point{i, j};
         }
     }
     return result;
 }
 
-static std::map<std::tuple<char, char, int, int>, int64_t> memo;
-
-static int64_t solveRecursive(char previousCode, char nextCode, int level, const int maxLevel) {
+static auto
+solveRecursive(std::map<std::tuple<char, char, int, int>, uint64_t> &memo, char previousCode, char nextCode, int level,
+               const int maxLevel) {
     static const auto numericSymbolPositions = calculateAllSymbolPositions(NUMERIC_KEYPAD);
     static const auto directionalSymbolPositions = calculateAllSymbolPositions(DIRECTIONAL_KEYPAD);
     static const auto allNumericMovements = calculateAllMovements(numericSymbolPositions.at(SYMBOL_SPACE),
@@ -132,17 +132,17 @@ static int64_t solveRecursive(char previousCode, char nextCode, int level, const
                                                 allNumericMovements.at(movementsPair) :
                                                 allDirectionalMovements.at(movementsPair);
 
-    int64_t bestMovementResult = std::numeric_limits<int64_t>::max();
+    uint64_t bestMovementResult = std::numeric_limits<uint64_t>::max();
 
     for (const auto &movement: movements) {
-        int64_t currentMovementResult = 0;
+        uint64_t currentMovementResult = 0;
         if (level == maxLevel) {
-            currentMovementResult = static_cast<int>(movement.size());
+            currentMovementResult = movement.size();
             assert(movement.back() == SYMBOL_PUSH);
         } else {
             char previousMove = SYMBOL_PUSH;
             for (auto move: movement) {
-                currentMovementResult += solveRecursive(previousMove, move, level + 1, maxLevel);
+                currentMovementResult += solveRecursive(memo, previousMove, move, level + 1, maxLevel);
                 previousMove = move;
             }
             assert(previousMove == SYMBOL_PUSH);
@@ -160,12 +160,13 @@ static auto solve(const std::string &filepath, const int maxLevel) {
     assert(fin.is_open());
     std::string line;
 
-    int64_t result = 0;
+    std::map<std::tuple<char, char, int, int>, uint64_t> memo;
+    uint64_t result = 0;
     while (std::getline(fin, line)) {
-        int64_t lineResult = 0;
+        uint64_t lineResult = 0;
         char prevCode = SYMBOL_PUSH;
         for (auto code: line) {
-            lineResult += solveRecursive(prevCode, code, 0, maxLevel);
+            lineResult += solveRecursive(memo, prevCode, code, 0, maxLevel);
             prevCode = code;
         }
         result += std::stoi(line.substr(0, line.size() - 1)) * lineResult;
@@ -182,9 +183,8 @@ static auto star2(const std::string &filepath) {
 }
 
 int main() {
-    std::cout << star1("example_input.txt") << std::endl;
-    std::cout << star1("input.txt") << std::endl;
-    std::cout << star2("input.txt") << std::endl;
-
+    std::cout << star1("example_input.txt") << std::endl; // 126384
+    std::cout << star1("input.txt") << std::endl; // 155252
+    std::cout << star2("input.txt") << std::endl; // 195664513288128
     return 0;
 }

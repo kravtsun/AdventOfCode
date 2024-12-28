@@ -8,24 +8,22 @@
 #include <cassert>
 #include <map>
 
-using pii = std::pair<int, int>;
-const auto BAD_POINT = pii{-1, -1};
+using Point = std::pair<int, int>;
 
-static pii addPoint(const pii &lhs, const pii &rhs) {
+static Point addPoint(const Point &lhs, const Point &rhs) {
     return std::make_pair(lhs.first + rhs.first, lhs.second + rhs.second);
 }
 
-static bool isGoodCoordinate(int x, int n) {
-    return 0 <= x && x < n;
-}
-
-static bool isGoodPoint(pii p, int n, int m) {
+static bool isGoodPoint(const Point &p, int n, int m) {
+    static constexpr auto isGoodCoordinate = [](int x, int n) {
+        return 0 <= x && x < n;
+    };
     return isGoodCoordinate(p.first, n) && isGoodCoordinate(p.second, m);
 }
 
 static auto readPoints(const std::string &filepath) {
     std::ifstream fin{filepath};
-    std::vector<pii> points;
+    std::vector<Point> points;
     int x, y;
     char delimiter;
     while (fin >> x >> delimiter >> y) {
@@ -36,6 +34,8 @@ static auto readPoints(const std::string &filepath) {
 }
 
 static auto findPath(const std::vector<std::string> &field) {
+    const Point BAD_POINT{-1, -1};
+
     const auto height = static_cast<int>(field.size());
     const auto width = static_cast<int>(field[0].size());
 
@@ -43,11 +43,11 @@ static auto findPath(const std::vector<std::string> &field) {
     const int dy[] = {0, 0, -1, 1};
     const auto ndirs = 4;
 
-    const pii startPos{0, 0};
-    const pii finishPos{width - 1, height - 1};
+    const Point startPos{0, 0};
+    const Point finishPos{width - 1, height - 1};
     // coordinates, number of states
-    std::queue<pii> q;
-    std::map<pii, pii> parent;
+    std::queue<Point> q;
+    std::map<Point, Point> parent;
     q.push(startPos);
     parent[startPos] = BAD_POINT;
 
@@ -56,7 +56,7 @@ static auto findPath(const std::vector<std::string> &field) {
         q.pop();
 
         if (p == finishPos) {
-            std::vector<pii> path;
+            std::vector<Point> path;
             while (p != BAD_POINT) {
                 path.push_back(p);
                 p = parent.at(p);
@@ -74,7 +74,7 @@ static auto findPath(const std::vector<std::string> &field) {
         }
     }
 
-    return std::vector<pii>{};
+    return std::vector<Point>{};
 }
 
 static auto star1(const std::string &filepath, int dim, int limit = -1) {
@@ -104,7 +104,7 @@ static auto star2(const std::string &filepath, int dim) {
     auto path = findPath(field);
     assert(!path.empty());
 
-    std::set<pii> pathPoints{path.begin(), path.end()};
+    std::set<Point> pathPoints{path.begin(), path.end()};
 
     for (auto p: points) {
         field[p.second][p.first] = '#';
@@ -120,17 +120,15 @@ static auto star2(const std::string &filepath, int dim) {
 
         pathPoints.clear();
         std::copy(path.begin(), path.end(), std::inserter(pathPoints, pathPoints.end()));
-        pathPoints = std::set<pii>{path.begin(), path.end()};
+        pathPoints = std::set<Point>{path.begin(), path.end()};
     }
     return std::string("FAIL");
 }
 
 int main() {
-    std::cout << star1("example_input.txt", 7, 12) << std::endl;
-    std::cout << star1("input.txt", 71, 1024) << std::endl;
-
-    std::cout << star2("example_input.txt", 7) << std::endl;
-    std::cout << star2("input.txt", 71) << std::endl;
-
+    std::cout << star1("example_input.txt", 7, 12) << std::endl; // 22
+    std::cout << star1("input.txt", 71, 1024) << std::endl; // 318
+    std::cout << star2("example_input.txt", 7) << std::endl; // 6,1
+    std::cout << star2("input.txt", 71) << std::endl; // 56,29
     return 0;
 }

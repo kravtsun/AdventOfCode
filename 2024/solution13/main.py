@@ -96,7 +96,7 @@ def star2(filepath: str):
 
 
 if __name__ == '__main__':
-    star1("example_input.txt")
-    star1("input.txt")
+    star1("example_input.txt") # 480
+    star1("input.txt") # 26299
     # no sample reference result this time
-    star2("input.txt")
+    star2("input.txt") # 107824497933339

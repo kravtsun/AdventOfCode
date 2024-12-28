@@ -7,23 +7,22 @@
 #include <queue>
 #include <set>
 
-using pii = std::pair<int, int>;
+using Point = std::pair<int, int>;
 
-static bool isGoodCoordinate(int x, int n) {
-    return 0 <= x && x < n;
-}
-
-static bool isGoodPoint(pii p, int n, int m) {
+static bool isGoodPoint(const Point &p, int n, int m) {
+    static constexpr auto isGoodCoordinate = [](int x, int n) {
+        return 0 <= x && x < n;
+    };
     return isGoodCoordinate(p.first, n) && isGoodCoordinate(p.second, m);
 }
 
-// IMPORTANT: ordered clockwise
-static const std::array di{-1, 0, 1, 0};
-static const std::array dj{0, 1, 0, -1};
-static_assert(di.size() == dj.size());
-static const int NDELTA = di.size();
+static const int NDELTA = 4;
 
-static pii pointAddDelta(pii p, int deltaIndex) {
+static Point pointAddDelta(Point p, int deltaIndex) {
+    // IMPORTANT: ordered clockwise
+    static const std::array<int, NDELTA> di{-1, 0, 1, 0};
+    static const std::array<int, NDELTA> dj{0, 1, 0, -1};
+    static_assert(di.size() == dj.size());
     return std::make_pair(p.first + di[deltaIndex], p.second + dj[deltaIndex]);
 }
 
@@ -35,7 +34,7 @@ static auto linesToColors(const std::vector<std::string> &lines) {
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < m; ++j) {
             if (colors[i][j] == -1) {
-                std::queue<pii> q;
+                std::queue<Point> q;
                 q.emplace(i, j);
                 colors[i][j] = currentColor;
                 const auto currentChar = lines[i][j];
@@ -95,14 +94,14 @@ static auto star2(const std::vector<std::string> &lines) {
     const auto colors = linesToColors(lines);
 
     // color to small side (coordinate, index of di/dj)
-    using SmallSide = std::pair<pii, int>;
+    using SmallSide = std::pair<Point, int>;
     std::map<int, std::set<SmallSide>> colorSmallSides;
     std::map<int, int> colorAreas;
 
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < m; ++j) {
             const auto currentColor = colors[i][j];
-            pii p{i, j};
+            Point p{i, j};
             for (int k = 0; k < NDELTA; ++k) {
                 auto pNext = pointAddDelta({i, j}, k);
                 if (!isGoodPoint(pNext, n, m) || colors[pNext.first][pNext.second] != colors[i][j]) {
@@ -124,8 +123,8 @@ static auto star2(const std::vector<std::string> &lines) {
             auto kPrev = (k - 1 + NDELTA) % NDELTA;
             auto kNext = (k + 1 + NDELTA) % NDELTA;
 
-            std::queue<pii> q;
-            auto addNext = [&](pii p, int kNext) {
+            std::queue<Point> q;
+            auto addNext = [&](Point p, int kNext) {
                 auto pNext = pointAddDelta(p, kNext);
 
                 auto nextSmallSide = std::make_pair(pNext, k);
@@ -197,6 +196,5 @@ static void testStar2() {
 int main() {
     testStar1();
     testStar2();
-
     return 0;
 }

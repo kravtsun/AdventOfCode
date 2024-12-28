@@ -11,21 +11,19 @@ static const auto LEFT = '<';
 static const auto RIGHT = '>';
 static const auto DOWN = 'v';
 static const auto UP = '^';
-static const std::array dirs = {LEFT, UP, RIGHT, DOWN};
-static const auto ndirs = static_cast<int>(dirs.size());
-using pii = std::pair<int, int>;
-static const std::map<char, pii> dirToDelta = {
+using Point = std::pair<int, int>;
+static const std::map<char, Point> dirToDelta = {
         {LEFT,  {0,  -1}},
         {RIGHT, {0,  1}},
         {UP,    {-1, 0}},
         {DOWN,  {1,  0}},
 };
 
-static pii addPoint(const pii &lhs, const pii &rhs) {
+static Point addPoint(const Point &lhs, const Point &rhs) {
     return std::make_pair(lhs.first + rhs.first, lhs.second + rhs.second);
 }
 
-static pii subtractPoint(const pii &lhs, const pii &rhs) {
+static Point subtractPoint(const Point &lhs, const Point &rhs) {
     return std::make_pair(lhs.first - rhs.first, lhs.second - rhs.second);
 }
 
@@ -36,11 +34,10 @@ static auto readLines(std::istream &fin) {
         lines.push_back(line);
     }
 
-    const pii BAD_POINT = std::make_pair(-1, -1);
-    pii startPos = BAD_POINT;
+    const Point BAD_POINT = std::make_pair(-1, -1);
+    Point startPos = BAD_POINT;
     for (int i = 0; i < lines.size(); ++i) {
-        auto pos = lines[i].find('@');
-        if (pos != std::string::npos) {
+        if (auto pos = lines[i].find('@'); pos != std::string::npos) {
             startPos.first = i;
             startPos.second = static_cast<int>(pos);
             break;
@@ -50,12 +47,24 @@ static auto readLines(std::istream &fin) {
     return std::make_tuple(lines, startPos);
 }
 
-static int star1(const std::string &filepath) {
+static auto measureDistances(const std::vector<std::string> &lines, char symbol) {
+    const auto n = lines.size();
+    const auto m = lines[0].size();
+    size_t result = 0;
+    for (size_t i = 0; i < n; ++i) {
+        for (size_t j = 0; j < m; ++j) {
+            if (lines[i][j] == symbol) {
+                result += i * 100 + j;
+            }
+        }
+    }
+    return result;
+}
+
+static auto star1(const std::string &filepath) {
     std::ifstream fin{filepath};
     auto [lines, startPos] = readLines(fin);
     lines[startPos.first][startPos.second] = '.';
-    const auto n = static_cast<int>(lines.size());
-    const auto m = static_cast<int>(lines[0].size());
 
     auto p = startPos;
     std::string moves;
@@ -63,9 +72,9 @@ static int star1(const std::string &filepath) {
         assert(!moves.empty());
         for (auto dirChar: moves) {
             auto delta = dirToDelta.at(dirChar);
-            pii pNext = addPoint(p, delta);
+            Point pNext = addPoint(p, delta);
             if (lines[pNext.first][pNext.second] == '#') continue;
-            pii pBlock = pNext;
+            Point pBlock = pNext;
             while (lines[pBlock.first][pBlock.second] == 'O') {
                 pBlock = addPoint(pBlock, delta);
             }
@@ -79,24 +88,16 @@ static int star1(const std::string &filepath) {
         }
     }
 
-    int result = 0;
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < m; ++j) {
-            if (lines[i][j] == 'O') {
-                result += i * 100 + j;
-            }
-        }
-    }
-    return result;
+    return measureDistances(lines, 'O');
 }
 
 // Modified field specially for star2
-static auto getNewLines(const std::vector<std::string> &lines, pii startPos) {
-    const auto n = static_cast<int>(lines.size());
-    const auto m = static_cast<int>(lines[0].size());
+static auto getNewLines(const std::vector<std::string> &lines, Point startPos) {
+    const auto n = lines.size();
+    const auto m = lines[0].size();
     std::vector<std::string> newLines(n, std::string(2 * m, '.'));
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < m; ++j) {
+    for (size_t i = 0; i < n; ++i) {
+        for (size_t j = 0; j < m; ++j) {
             if (lines[i][j] == 'O') {
                 newLines[i][2 * j + 0] = '[';
                 newLines[i][2 * j + 1] = ']';
@@ -110,21 +111,7 @@ static auto getNewLines(const std::vector<std::string> &lines, pii startPos) {
     return std::make_tuple(newLines, startPos);
 }
 
-static auto measureDistances(const std::vector<std::string> &lines) {
-    const auto n = static_cast<int>(lines.size());
-    const auto m = static_cast<int>(lines[0].size());
-    int result = 0;
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < m; ++j) {
-            if (lines[i][j] == '[') {
-                result += i * 100 + j;
-            }
-        }
-    }
-    return result;
-}
-
-static int star2(const std::string &filepath) {
+static auto star2(const std::string &filepath) {
     std::ifstream fin{filepath};
     assert(fin.is_open());
     auto [lines, startPos] = readLines(fin);
@@ -133,7 +120,7 @@ static int star2(const std::string &filepath) {
     lines = newLines;
     startPos = newStartPos;
 
-    auto isObstacle = [&](pii pNext) {
+    auto isObstacle = [&](Point pNext) {
         return lines[pNext.first][pNext.second] == '#';
     };
 
@@ -143,7 +130,7 @@ static int star2(const std::string &filepath) {
         assert(!moves.empty());
         for (auto dirChar: moves) {
             auto delta = dirToDelta.at(dirChar);
-            pii pNext = addPoint(p, delta);
+            Point pNext = addPoint(p, delta);
             if (isObstacle(pNext)) continue;
 
             if (lines[pNext.first][pNext.second] == '.') {
@@ -169,12 +156,12 @@ static int star2(const std::string &filepath) {
                     pStartBlock.second--;
                 }
 
-                std::set<pii> used; // points with '['
-                std::queue<pii> q;
+                std::set<Point> used; // points with '['
+                std::queue<Point> q;
                 q.push(pStartBlock);
                 used.insert(pStartBlock);
                 while (!q.empty()) {
-                    pii pBlock = q.front();
+                    Point pBlock = q.front();
                     q.pop();
                     assert(lines[pBlock.first][pBlock.second] == '[');
                     auto pNextBlock = addPoint(pBlock, delta);
@@ -213,8 +200,8 @@ static int star2(const std::string &filepath) {
                 if (!isGoodToPush) continue;
 
                 // Passing through all the used blocks in the order by which no clashing between them happens.
-                std::vector<pii> usedBlocks(used.begin(), used.end());
-                std::sort(usedBlocks.begin(), usedBlocks.end(), [&dirChar](const pii &lhs, const pii &rhs) {
+                std::vector<Point> usedBlocks(used.begin(), used.end());
+                std::sort(usedBlocks.begin(), usedBlocks.end(), [&dirChar](const Point &lhs, const Point &rhs) {
                     if (dirChar == UP) {
                         // higher blocks go first - they have the space already.
                         return lhs.first < rhs.first;
@@ -235,17 +222,16 @@ static int star2(const std::string &filepath) {
         }
     }
 
-    return measureDistances(lines);
+    return measureDistances(lines, '[');
 }
 
 int main() {
-    std::cout << star1("example_input1.txt") << std::endl;
-    std::cout << star1("example_input2.txt") << std::endl;
-    std::cout << star1("input.txt") << std::endl;
+    std::cout << star1("example_input1.txt") << std::endl; // 10092
+    std::cout << star1("example_input2.txt") << std::endl; // 2028
+    std::cout << star1("input.txt") << std::endl; // 1476771
 
-    std::cout << star2("example_input3.txt") << std::endl;
-    std::cout << star2("example_input1.txt") << std::endl;
-    std::cout << star2("input.txt") << std::endl;
-
+    std::cout << star2("example_input3.txt") << std::endl; // 618
+    std::cout << star2("example_input1.txt") << std::endl; // 9021
+    std::cout << star2("input.txt") << std::endl; // 1468005
     return 0;
 }

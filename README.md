@@ -15,7 +15,7 @@ Advent of Code adventures in C++ adventofcode.com/
 - 2024/solution10 - C++-17
 - 2024/solution11 - C++-17
 - 2024/solution12 - C++-20
-- 2024/solution13 - Python3
+- 2024/solution13 - Python3: run with `python3 main.py`
 - 2024/solution14 - C++-17
 - 2024/solution15 - C++-20
 - 2024/solution16 - C++-17

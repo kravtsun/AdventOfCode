@@ -1,6 +1,5 @@
 #include <iostream>
 #include <fstream>
-#include <iterator>
 #include <vector>
 #include <sstream>
 #include <cassert>
@@ -8,24 +7,24 @@
 
 static const int MAXPOW = 18;
 static int64_t pows10[MAXPOW] = {
-    1,
-    10,
-    100,
-    1000,
-    10000,
-    100000,
-    1000000,
-    10000000,
-    100000000,
-    1000000000,
-    10000000000,
-    100000000000,
-    1000000000000,
-    10000000000000,
-    100000000000000,
-    1000000000000000,
-    10000000000000000,
-    100000000000000000
+        1,
+        10,
+        100,
+        1000,
+        10000,
+        100000,
+        1000000,
+        10000000,
+        100000000,
+        1000000000,
+        10000000000,
+        100000000000,
+        1000000000000,
+        10000000000000,
+        100000000000000,
+        1000000000000000,
+        10000000000000000,
+        100000000000000000
 };
 
 static int getNumberOfDigits(int64_t num) {
@@ -70,18 +69,11 @@ static std::vector<int64_t> blink(int64_t num) {
 
 static std::vector<int64_t> blink(const std::vector<int64_t> &v) {
     std::vector<int64_t> result;
-    for (auto num : v) {
+    for (auto num: v) {
         auto numResult = blink(num);
         std::copy(numResult.begin(), numResult.end(), std::back_inserter(result));
     }
     return result;
-}
-
-static void printNums(const std::vector<int64_t> &nums) {
-    for (auto num : nums) {
-        std::cout << num << " ";
-    }
-    std::cout << std::endl;
 }
 
 static auto star1(std::vector<int64_t> nums, size_t nblinks) {
@@ -91,62 +83,65 @@ static auto star1(std::vector<int64_t> nums, size_t nblinks) {
     return nums.size();
 }
 
-static const int MAXNBLINKS = 75 + 1;
-static std::map<int64_t, size_t> memo[MAXNBLINKS];
+static auto star1(const std::string &filepath) {
+    auto nums = readNums(filepath);
+    auto numsSize = star1(nums, 25);
+    return numsSize;
+}
 
-static uint64_t star2(const std::vector<int64_t> &nums, size_t nblinks);
+static uint64_t
+star2(std::map<std::pair<size_t, int64_t>, size_t> &memo, const std::vector<int64_t> &nums, size_t nblinks);
 
-static uint64_t star2(int64_t num, size_t nblinks) {
+static uint64_t star2(std::map<std::pair<size_t, int64_t>, size_t> &memo, int64_t num, size_t nblinks) {
     if (nblinks == 0) return 1;
-    auto memoIt = memo[nblinks].find(num);
-    if (memoIt != memo[nblinks].end()) {
+    auto memoParameter = std::make_pair(nblinks, num);
+    auto memoIt = memo.find(memoParameter);
+    if (memoIt != memo.end()) {
         return memoIt->second;
     }
 
     auto numsAfterBlink = blink(num);
-    auto result = star2(numsAfterBlink, nblinks - 1);
-    memo[nblinks][num] = result;
+    auto result = star2(memo, numsAfterBlink, nblinks - 1);
+    memo[memoParameter] = result;
     return result;
 }
 
-static uint64_t star2(const std::vector<int64_t> &nums, size_t nblinks) {
+static uint64_t
+star2(std::map<std::pair<size_t, int64_t>, size_t> &memo, const std::vector<int64_t> &nums, size_t nblinks) {
     uint64_t result = 0;
-    for (auto num : nums) {
-        result += star2(num, nblinks);
+    for (auto num: nums) {
+        result += star2(memo, num, nblinks);
     }
     return result;
 }
 
-static auto test() {
+static auto testStar2() {
     // filename, number of blinks -> result after specified number of blinks
     const std::map<std::pair<std::string, size_t>, size_t> expectedResults = {
-            {{"example_input.txt", 1}, 7},
-            {{"example_input1.txt", 6}, 22},
+            {{"example_input.txt",  1},  7},
+            {{"example_input1.txt", 6},  22},
             {{"example_input1.txt", 25}, 55312},
     };
 
-    for (auto [filepathNblinks, expectedSize] : expectedResults) {
+    std::map<std::pair<size_t, int64_t>, size_t> memo;
+    for (auto [filepathNblinks, expectedSize]: expectedResults) {
         auto [filepath, nblinks] = filepathNblinks;
         auto nums = readNums(filepath);
-        auto numsSize = star2(nums, nblinks);
+        auto numsSize = star2(memo, nums, nblinks);
         assert(numsSize == expectedSize);
     }
 }
 
-static auto solveStar1() {
-    auto nums = readNums("input.txt");
-    auto numsSize = star1(nums, 25);
-    std::cout << numsSize << std::endl;
-}
-
-static auto solveStar2() {
-    auto nums = readNums("input.txt");
-    auto numsSize = star2(nums, 75);
-    std::cout << numsSize << std::endl;
+static auto star2(const std::string &filepath) {
+    auto nums = readNums(filepath);
+    std::map<std::pair<size_t, int64_t>, size_t> memo;
+    auto numsSize = star2(memo, nums, 75);
+    return numsSize;
 }
 
 int main() {
-    solveStar1();
-    solveStar2();
+    testStar2();
+    std::cout << star1("input.txt") << std::endl; // 197157
+    std::cout << star2("input.txt") << std::endl; // 234430066982597
     return 0;
 }
