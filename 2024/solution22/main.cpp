@@ -3,13 +3,12 @@
 #include <cassert>
 #include <vector>
 #include <array>
-#include <map>
-#include <queue>
 #include <set>
-
-const int64_t MOD = 16777216;
+#include <unordered_set>
+#include <unordered_map>
 
 static auto nextSecretNumber(int64_t num) {
+    const int64_t MOD = 16777216;
     num = ((num << 6) ^ num) % MOD;
     num = (num ^ (num >> 5)) % MOD;
     num = (num ^ (num << 11)) % MOD;
@@ -33,35 +32,53 @@ static auto star1(const std::string &filepath) {
     return result;
 }
 
-const int SINGLE_SEQUENCE_SIZE = 4;
-using SingleSequence = std::array<int, SINGLE_SEQUENCE_SIZE>;
-using SingleSequenceToPrice = std::map<SingleSequence, int>;
+static const int SINGLE_SEQUENCE_SIZE = 4;
+using SingleSequence = int; // packed array<int> of size SINGLE_SEQUENCE_SIZE
+using SingleSequenceToPrice = std::unordered_map<SingleSequence, int>;
 
-static auto calculateSingleSequenceToPrice(int64_t num) {
-    SingleSequenceToPrice singleSequenceToPrice;
-    int price = static_cast<int>(num % 10);
-    std::deque<int> lastSingleSequence;
-
-    for (int i = 0; i < NPRICE_CHANGES; ++i) {
-        auto nextNum = nextSecretNumber(num);
-        int nextPrice = static_cast<int>(nextNum % 10);
-        lastSingleSequence.push_back(nextPrice - price);
-        if (lastSingleSequence.size() > SINGLE_SEQUENCE_SIZE) {
-            assert(lastSingleSequence.size() == SINGLE_SEQUENCE_SIZE + 1);
-            lastSingleSequence.pop_front();
-        }
-
-        if (lastSingleSequence.size() == SINGLE_SEQUENCE_SIZE) {
-            SingleSequence singleSequence;
-            std::copy(lastSingleSequence.begin(), lastSingleSequence.end(), singleSequence.begin());
-            if (singleSequenceToPrice.count(singleSequence) == 0) {
-                singleSequenceToPrice[singleSequence] = nextPrice;
-            }
-        }
-
-        num = nextNum;
-        price = nextPrice;
+static auto appendNumberToPackedSingleSequence(SingleSequence singleSequence, int priceChange) {
+    const auto MINIMAL_PRICE_CHANGE = -18; // 9 - (-9)
+    const auto MAXIMAL_PRICE_CHANGE = 18;  // -9 - 9
+    // Pack 4-sized single sequence into an integer number.
+    if (priceChange < MINIMAL_PRICE_CHANGE || priceChange > MAXIMAL_PRICE_CHANGE) {
+        throw std::runtime_error("Bad difference: " + std::to_string(priceChange));
     }
+    const auto PACK_MOD = 100;
+    // WHOLE_PACK_MOD = PACK_MOD ^ (SINGLE_SEQUENCE_SIZE - 1) to cut off
+    // a too early element for the current single sequence (by index i - SINGLE_SEQUENCE_SIZE)
+    const auto WHOLE_PACK_MOD = 1'00'00'00;
+    singleSequence %= WHOLE_PACK_MOD;
+    singleSequence *= PACK_MOD;
+    singleSequence += priceChange - MINIMAL_PRICE_CHANGE;
+    return singleSequence;
+}
+
+static auto calculateSingleSequenceToPrice(const std::vector<int64_t> &nums) {
+    SingleSequenceToPrice singleSequenceToPrice;
+    for (auto num: nums) {
+        std::unordered_set<SingleSequence> currentSingleSequences;
+        int price = static_cast<int>(num % 10);
+        SingleSequence singleSequence = 0;
+
+        for (int i = 0; i < NPRICE_CHANGES; ++i) {
+            auto nextNum = nextSecretNumber(num);
+            int nextPrice = static_cast<int>(nextNum % 10);
+            auto priceChange = nextPrice - price;
+            singleSequence = appendNumberToPackedSingleSequence(singleSequence, priceChange);
+
+            if (i + 1 >= SINGLE_SEQUENCE_SIZE) {
+                auto it = currentSingleSequences.find(singleSequence);
+                if (it == currentSingleSequences.end()) {
+                    currentSingleSequences.insert(it, singleSequence);
+                    singleSequenceToPrice[singleSequence] += nextPrice;
+                }
+            }
+
+            num = nextNum;
+            price = nextPrice;
+        }
+    }
+
     return singleSequenceToPrice;
 }
 
@@ -71,42 +88,24 @@ static auto star2(const std::string &filepath) {
 
     int64_t num;
 
-    std::vector<SingleSequenceToPrice> singleSequenceToPrices;
-    std::set<SingleSequence> allSingleSequences;
-
+    std::vector<int64_t> nums;
     while (fin >> num) {
-        auto singleSequenceToPrice = calculateSingleSequenceToPrice(num);
-        singleSequenceToPrices.push_back(singleSequenceToPrice);
-        for (auto [singleSequence, _]: singleSequenceToPrice) {
-            allSingleSequences.insert(singleSequence);
+        nums.push_back(num);
+    }
+    auto singleSequenceToPrice = calculateSingleSequenceToPrice(nums);
+    int bestPrice = std::numeric_limits<int>::min();
+    for (const auto &[singleSequence, price]: singleSequenceToPrice) {
+        if (price > bestPrice) {
+            bestPrice = price;
         }
     }
-
-    auto getPriceForSingleSequence = [&](SingleSequence singleSequence) {
-        int result = 0;
-        for (const auto &singleSequenceToPrice: singleSequenceToPrices) {
-            auto priceForCurrentSequenceIt = singleSequenceToPrice.find(singleSequence);
-            if (priceForCurrentSequenceIt != singleSequenceToPrice.end()) {
-                result += priceForCurrentSequenceIt->second;
-            }
-        }
-        return result;
-    };
-    int bestResult = std::numeric_limits<int>::min();
-
-    for (auto singleSequence: allSingleSequences) {
-        auto currentResult = getPriceForSingleSequence(singleSequence);
-        if (currentResult > bestResult) {
-            bestResult = currentResult;
-        }
-    }
-    return bestResult;
+    return bestPrice;
 }
 
 int main() {
-    std::cout << star1("example_input1.txt") << std::endl;
-    std::cout << star1("input.txt") << std::endl;
-    std::cout << star2("example_input2.txt") << std::endl;
-    std::cout << star2("input.txt") << std::endl;
+    std::cout << star1("example_input1.txt") << std::endl; // 37327623
+    std::cout << star1("input.txt") << std::endl; // 14082561342
+    std::cout << star2("example_input2.txt") << std::endl; // 23
+    std::cout << star2("input.txt") << std::endl; // 1568
     return 0;
 }
