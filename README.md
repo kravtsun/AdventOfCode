@@ -29,3 +29,19 @@ Advent of Code adventures in C++ adventofcode.com/
 - 2024/solution23 - C++-17
 - 2024/solution24 - C++-20
 - 2024/solution25 - C++-17
+
+# 2025 Languages by folder
+
+- 2025/solution01 - Python3: run with `python3 main.py`
+- 2025/solution02 - TODO
+- 2025/solution03 - TODO
+- 2025/solution04 - TODO
+- 2025/solution05 - TODO
+- 2025/solution06 - TODO
+- 2025/solution07 - TODO
+- 2025/solution08 - TODO
+- 2025/solution09 - TODO
+- 2025/solution10 - TODO
+- 2025/solution11 - TODO
+- 2025/solution12 - TODO
+
