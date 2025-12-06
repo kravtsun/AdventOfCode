@@ -7,15 +7,16 @@ splitOn [] str = map (:[]) str
 splitOn delimStr str = let
     delimLen = length delimStr
 
-    -- splitOnHelper splits the string rest (second argument) recursively: 
-    -- if meets the delimiter string as prefix, new segment is cut;
+    -- splitOnHelper splits the string rest (second argument) recursively:
+    -- if it meets the delimiter string as prefix, new segment is cut;
     -- otherwise, it adds the first character to the current segment (first argument)
-    splitOnHelper currentStringMember [] = [currentStringMember]
-    splitOnHelper currentStringMember strRest@(firstChar:otherChars) = let
+    -- current segment is accumulated in reverse to avoid using (++)
+    splitOnHelper currentRev [] = [reverse currentRev]
+    splitOnHelper currentRev strRest@(firstChar:otherChars) = let
         strPrefix = take delimLen strRest
         in if strPrefix == delimStr
-            then currentStringMember : splitOnHelper [] (drop delimLen strRest)
-            else splitOnHelper (currentStringMember ++ [firstChar]) otherChars
+            then reverse currentRev : splitOnHelper [] (drop delimLen strRest)
+            else splitOnHelper (firstChar : currentRev) otherChars
     in splitOnHelper [] str
 
 
