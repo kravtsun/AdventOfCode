@@ -1,26 +1,15 @@
 // This software was partially written using Suggestions from GitHub Copilot.
-#include <bits/stdc++.h>
+#include <iostream>
+#include <string>
+#include <algorithm>
+#include "aoc_utils/io_helpers.h"
 
-/// Reads all lines from a file and returns them as a vector of strings.
-static auto read_lines(const std::string &filepath) {
-    std::ifstream fin{filepath};
-    if (!fin.is_open()) {
-        throw std::runtime_error("Failed to open the file: " + filepath);
-    }
-    std::vector<std::string> lines;
-    std::string line;
-    while (std::getline(fin, line)) {
-        lines.push_back(line);
-    }
-    return lines;
-}
+using aoc_utils::get_input_filepath;
+using aoc_utils::read_lines;
+using aoc_utils::char2digit;
 
-static int char2digit(char c) {
-    return c - '0';
-}
-
-static int star1(const std::string &filepath) {
-    auto lines = read_lines(filepath);
+static int star1(const std::string &filename) {
+    auto lines = read_lines(get_input_filepath(filename, 3));
 
     const auto num_from_chars = [](char a, char b) {
         return char2digit(a) * 10 + char2digit(b);
@@ -94,25 +83,26 @@ static void DFS(const std::string &s, const int i, const int digits_rest_cnt,
         return;
     }
 
+    const int BASE = 10;
     // used[i] holds true only if we already tried digit i as next.
     // Greedy approach - if we try taking digit i now on the first available
     // position, we do not limit our window of opportunities (so the same digit
     // can repeat)
-    std::vector<bool> used(10, false);
+    std::vector<bool> used(BASE, false);
 
     for (int j = i; j < s.size(); ++j) {
         char c = s[j];
         auto d = char2digit(c);
         if (!used[d]) {
             used[d] = true;
-            auto cur_sum = 10 * iteration_sum + d;
+            auto cur_sum = BASE * iteration_sum + d;
             DFS(s, j + 1, digits_rest_cnt - 1, cur_sum, best_sum);
         }
     }
 }
 
-static std::int64_t star2(const std::string &filepath) {
-    auto lines = read_lines(filepath);
+static std::int64_t star2(const std::string &filename) {
+    auto lines = read_lines(get_input_filepath(filename, 3));
 
     std::int64_t res = 0;
     for (const auto &line : lines) {
@@ -125,9 +115,9 @@ static std::int64_t star2(const std::string &filepath) {
 }
 
 int main() {
-    std::cout << star1("example_input.txt") << std::endl;
-    std::cout << star1("input.txt") << std::endl;
-    std::cout << star2("example_input.txt") << std::endl;
-    std::cout << star2("input.txt") << std::endl;
+    std::cout << star1(aoc_utils::EXAMPLE_INPUT_FILE) << std::endl;
+    std::cout << star1(aoc_utils::INPUT_FILE) << std::endl;
+    std::cout << star2(aoc_utils::EXAMPLE_INPUT_FILE) << std::endl;
+    std::cout << star2(aoc_utils::INPUT_FILE) << std::endl;
     return 0;
 }

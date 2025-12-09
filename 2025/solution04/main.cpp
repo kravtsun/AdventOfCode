@@ -1,68 +1,45 @@
-// This software was partially written using Suggestions from GitHub Copilot.
-#include <bits/stdc++.h>
+#include "aoc_utils/io_helpers.h"
+#include "aoc_utils/field.h"
 
-/// Reads all lines from a file and returns them as a vector of strings.
-static auto read_lines(const std::string &filepath) {
-    std::ifstream fin{filepath};
-    if (!fin.is_open()) {
-        throw std::runtime_error("Failed to open the file: " + filepath);
-    }
-    std::vector<std::string> lines;
-    std::string line;
-    while (std::getline(fin, line)) {
-        lines.push_back(line);
-    }
-    return lines;
-}
+#include <queue>
+#include <map>
+#include <ranges>
+#include <iostream>
 
-using Point = std::pair<int, int>;
+using aoc_utils::Field;
+using aoc_utils::read_lines;
+using Point = Field::Point;
 
-static bool is_good_point(const Point &p, int n, int m) {
-    return p.first >= 0 && p.first < n && p.second >= 0 && p.second < m;
-}
+static auto get_neighbor_rolls(const Field &field, const Point &p) {
+    constexpr int deltas[3] = {-1, 0, 1};
 
-static auto add_point(const Point &lhs, const Point &rhs) {
-    return Point{lhs.first + rhs.first, lhs.second + rhs.second};
-}
-
-static auto get_neighbor_rolls(const std::vector<std::string> &lines, const Point &p) {
-    // in which directions there can be neighbors
-    static const int deltas[3] = {-1, 0, 1};
-
-    const auto n = static_cast<int>(lines.size());
-    const auto m = static_cast<int>(lines[0].size());
-    std::vector<Point> neighborRolls;
-    for (auto dy : deltas) {
-        for (auto dx : deltas) {
-            if (dy == 0 && dx == 0) {
-                // do not count the roll of paper itself as its own neighbor
-                continue;
-            }
-
-            const Point pNext = add_point(p, {dy, dx});
-            if (!is_good_point(pNext, n, m)) continue;
-            bool isNeighborRoll = lines[pNext.first][pNext.second] == '@';
-            if (isNeighborRoll) {
-                neighborRolls.push_back(pNext);
+    std::vector<Point> neighbor_rolls{};
+    for (int dx : deltas) {
+        for (int dy : deltas) {
+            if (dx == 0 && dy == 0) continue;
+            auto p_next = p + Point{dx, dy};
+            if (field.is_good_point(p_next) && field[p_next] == '@') {
+                neighbor_rolls.push_back(p_next);
             }
         }
     }
-    return neighborRolls;
+    return neighbor_rolls;
 }
 
-static auto star1(const std::string &filepath) {
-    const auto lines = read_lines(filepath);
-    const auto n = static_cast<int>(lines.size());
-    const auto m = static_cast<int>(lines[0].size());
+static auto star1(const std::string &filename) {
+    const auto lines = read_lines(aoc_utils::get_input_filepath(filename, 4));
+    Field field{lines};
+
     int res = 0;
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < m; ++j) {
-            if (lines[i][j] != '@') {
+    for (int i = 0; i < field.height(); ++i) {
+        for (int j = 0; j < field.width(); ++j) {
+            Point p{j, i};
+            if (field[p] != '@') {
                 // Continue if we do not stand now upon a roll of paper
                 continue;
             }
-            Point p{i, j};
-            auto cnt = get_neighbor_rolls(lines, p).size();
+
+            auto cnt = get_neighbor_rolls(field, p).size();
             if (cnt < 4) {
                 // check if a roll is accessible
                 res++;
@@ -72,33 +49,24 @@ static auto star1(const std::string &filepath) {
     return res;
 }
 
-static auto star2(const std::string &filepath) {
-    auto lines = read_lines(filepath);
-    const auto n = static_cast<int>(lines.size());
-    const auto m = static_cast<int>(lines[0].size());
+static auto star2(const std::string &filename) {
+    const auto lines = read_lines(aoc_utils::get_input_filepath(filename, 4));
+    Field field{lines};
 
     int res = 0;
-
-    // Running breadth-first search
-    // in the processing queue q we put a roll cell when it can change its state
     std::queue<Point> q;
-
-    // as `used[p] = true` we mark the points which are:
-    // - to be processed on the next iteration (wave) - so that we do not add into the queue them twice,
-    // - if we are not going to process them anymore (turned into a non-roll state), not putting them into queue
     std::map<Point, bool> used;
 
-    // returns true if flip successful.
-    const auto try_flip_roll = [&lines, &q, &used, n, m](const Point &p) {
-        auto neighbor_rolls = get_neighbor_rolls(lines, p);
-        if (neighbor_rolls.size() < 4) {
-            for (auto pNext : neighbor_rolls) {
-                if (!used[pNext]) {
-                    used[pNext] = true;
-                    q.push(pNext);
+    const auto try_flip_roll = [&q, &used, &field](const Point &p) {
+        auto neighbor_rolls = get_neighbor_rolls(field, p);
+        if (std::ranges::distance(neighbor_rolls) < 4) {
+            for (const auto &p_next : neighbor_rolls) {
+                if (!used[p_next]) {
+                    used[p_next] = true;
+                    q.push(p_next);
                 }
             }
-            lines[p.first][p.second] = 'x';
+            field[p] = 'x';
             used[p] = true;
             return true;
         } else {
@@ -107,14 +75,10 @@ static auto star2(const std::string &filepath) {
         }
     };
 
-    // Initialize the queue with roll neighbors of the roll-cells with fewer than 4 neighbors
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < m; ++j) {
-            if (lines[i][j] != '@') {
-                // Continue if we do not stand now upon a roll of paper
-                continue;
-            }
-            Point p{i, j};
+    for (int i = 0; i < field.height(); ++i) {
+        for (int j = 0; j < field.width(); ++j) {
+            if (field[{j, i}] != '@') continue;
+            Point p{j, i};
             res += try_flip_roll(p);
         }
     }
@@ -122,24 +86,21 @@ static auto star2(const std::string &filepath) {
     while (!q.empty()) {
         Point p = q.front();
         q.pop();
-        if (lines[p.first][p.second] == 'x') {
-            continue;
-        }
+        if (field[p] == 'x') continue;
 
-        if (lines[p.first][p.second] != '@') {
+        if (field[p] != '@') {
             throw std::runtime_error("The point in the BFS queue should be a roll");
         }
 
-        auto neighbor_rolls = get_neighbor_rolls(lines, p);
-
-        if (neighbor_rolls.size() < 4) {
-            for (auto pNext : neighbor_rolls) {
+        auto neighbor_rolls = get_neighbor_rolls(field, p);
+        if (std::ranges::distance(neighbor_rolls) < 4) {
+            for (const auto &pNext : neighbor_rolls) {
                 if (!used[pNext]) {
                     used[pNext] = true;
                     q.push(pNext);
                 }
             }
-            lines[p.first][p.second] = 'x';
+            field[p] = 'x';
             used[p] = true;
             res++;
         } else {
@@ -151,9 +112,9 @@ static auto star2(const std::string &filepath) {
 }
 
 int main() {
-    std::cout << star1("example_input.txt") << std::endl;
-    std::cout << star1("input.txt") << std::endl;
-    std::cout << star2("example_input.txt") << std::endl;
-    std::cout << star2("input.txt") << std::endl;
+    std::cout << star1(aoc_utils::EXAMPLE_INPUT_FILE) << std::endl;
+    std::cout << star1(aoc_utils::INPUT_FILE) << std::endl;
+    std::cout << star2(aoc_utils::EXAMPLE_INPUT_FILE) << std::endl;
+    std::cout << star2(aoc_utils::INPUT_FILE) << std::endl;
     return 0;
 }
