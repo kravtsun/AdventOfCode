@@ -1,0 +1,28 @@
+BasedOnStyle: Google
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+AllowShortFunctionsOnASingleLine: Empty
+BreakBeforeBraces: Attach
+BraceWrapping:
+  AfterFunction: false
+  AfterClass: false
+  AfterControlStatement: false
+  AfterNamespace: false
+  BeforeElse: true
+  IndentBraces: false
+AlignOperands: true
+AlignTrailingComments: true
+SpaceBeforeParens: ControlStatements
+SpacesInParentheses: false
+SpacesInAngles: false
+SpacesInContainerLiterals: false
+SpacesInCStyleCastParentheses: false
+PointerAlignment: Left
+IndentCaseLabels: true
+SortIncludes: false
+IncludeBlocks: Preserve
+
+AlignConsecutiveDeclarations: false
+AlignConsecutiveAssignments: false
+ColumnLimit: 80
