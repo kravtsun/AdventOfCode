@@ -1,8 +1,5 @@
-cmake_minimum_required(VERSION 3.16)
 project(solution08)
-
-set(CMAKE_CXX_STANDARD 20)
 
 add_executable(solution08 main.cpp)
 
-target_compile_options(solution08 PRIVATE -fconcepts)
+target_link_libraries(solution08 aoc_utils)

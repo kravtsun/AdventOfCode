@@ -388,31 +388,6 @@ inline bool intersect_1d (double a, double b, double c, double d) {
     return max (a, c) <= min (b, d) + EPS;
 }
 
-bool intersect (pt a, pt b, pt c, pt d, pt & left, pt & right) {
-    if (! intersect_1d (a.x, b.x, c.x, d.x) || ! intersect_1d (a.y, b.y, c.y, d.y))
-        return false;
-    line m (a, b);
-    line n (c, d);
-    double zn = det (m.a, m.b, n.a, n.b);
-    if (abs (zn) < EPS) {
-        if (abs (m.dist (c)) > EPS || abs (n.dist (a)) > EPS)
-            return false;
-        if (b < a)  swap (a, b);
-        if (d < c)  swap (c, d);
-        left = max (a, c);
-        right = min (b, d);
-        return true;
-    }
-    else {
-        left.x = right.x = - det (m.c, m.b, n.c, n.b) / zn;
-        left.y = right.y = - det (m.a, m.c, n.a, n.c) / zn;
-        return betw (a.x, b.x, left.x)
-               && betw (a.y, b.y, left.y)
-               && betw (c.x, d.x, left.x)
-               && betw (c.y, d.y, left.y);
-    }
-}
-
 map<int, set<int>> lines;
 set<pii> points;
 int main() {

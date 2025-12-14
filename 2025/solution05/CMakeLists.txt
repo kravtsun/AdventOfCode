@@ -1,6 +1,5 @@
-cmake_minimum_required(VERSION 3.16)
 project(solution05)
 
-set(CMAKE_CXX_STANDARD 17)
-
 add_executable(solution05 main.cpp)
+
+target_link_libraries(solution05 aoc_utils)

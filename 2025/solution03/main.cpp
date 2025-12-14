@@ -1,23 +1,6 @@
 // This software was partially written using Suggestions from GitHub Copilot.
 #include <bits/stdc++.h>
-
-/// Reads all lines from a file and returns them as a vector of strings.
-static auto read_lines(const std::string &filepath) {
-    std::ifstream fin{filepath};
-    if (!fin.is_open()) {
-        throw std::runtime_error("Failed to open the file: " + filepath);
-    }
-    std::vector<std::string> lines;
-    std::string line;
-    while (std::getline(fin, line)) {
-        lines.push_back(line);
-    }
-    return lines;
-}
-
-static int char2digit(char c) {
-    return c - '0';
-}
+#include "aoc_utils/io_helpers.h"
 
 static int star1(const std::string &filepath) {
     auto lines = read_lines(filepath);

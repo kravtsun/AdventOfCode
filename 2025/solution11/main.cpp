@@ -448,24 +448,6 @@ string cycle_st, cycle_end;
 map<string, char> cl;
 map<string, string> p;
 
-bool dfs (const map<string, vector<string>> &g, string v) {
-    cl[v] = 1;
-    if (g.count(v)) {
-        for (auto to: g.at(v)) {
-            if (cl[to] == 0) {
-                p[to] = v;
-                if (dfs(g, to)) return true;
-            } else if (cl[to] == 1) {
-                cycle_end = v;
-                cycle_st = to;
-                return true;
-            }
-        }
-    }
-    cl[v] = 2;
-    return false;
-}
-
 int main() {
 //    star1();
 //    return 0;
@@ -566,22 +548,6 @@ int main() {
     const auto finishi1 = numPaths(FINISH, INTERMEDIATE1);
     cout << starti1 * i1i2 * i2finish // << endl;
     + starti2 * i2i1 * i1finish << endl;
-
-//    dfs(g, START);
-//    if (cycle_st.empty())
-//        puts ("Acyclic");
-//    else {
-//        puts ("Cyclic");
-//        vector<string> cycle;
-//        cycle.push_back (cycle_st);
-//        for (string v=cycle_end; v!=cycle_st; v=p[v])
-//            cycle.push_back (v);
-//        cycle.push_back (cycle_st);
-//        reverse (cycle.begin(), cycle.end());
-//        for (const auto & s : cycle) {
-//            cout << s << " ";
-//        }
-//    }
 
     return 0;
 }
