@@ -28,6 +28,15 @@
 .#.
 ###
 
-4x4: 0 0 0 0 2 0
 12x5: 1 0 1 0 2 2
 12x5: 1 0 1 0 3 2
+4x4: 0 0 0 0 2 0
+
+6
+
+7
+
+60
+
+24 shapes-rotations
+10x3 possible positions
