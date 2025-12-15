@@ -15,7 +15,7 @@ static auto INF = std::numeric_limits<T>::max();
 using Coordinate = std::uint64_t;
 
 static auto read_input(const std::string &filename) {
-    const auto filepath = aoc_utils::get_input_file(filename, 8);
+    const auto filepath = aoc_utils::get_input_filepath(filename, 8);
     using Point3 = aoc_utils::PointTmpl<Coordinate, 3>;
     std::vector<Point3> points;
 

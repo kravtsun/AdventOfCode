@@ -54,20 +54,6 @@ T from_string(const std::string &s) {
     return x;
 }
 
-template<typename T>
-T gcd(T a, T b) {
-    return b ? gcd(b, a % b) : a;
-}
-
-template<typename T=int64>
-T lcm(T a, T b) {
-    return a / gcd(a, b) * b;
-}
-
-static const std::vector<std::string> numbers = {
-        "zero",
-        "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
-};
 
 static auto readLines(const std::string &filepath) {
     std::ifstream fin{filepath};
@@ -223,46 +209,6 @@ std::string to_string(const PointTmpl<T, N> &p) {
     std::ostringstream os;
     os << p;
     return os.str();
-}
-
-template<typename T, int N>
-PointTmpl<T, N> operator+(const PointTmpl<T, N> &lhs, const PointTmpl<T, N> &rhs) {
-    PointTmpl<T, N> res;
-    for (int i = 0; i < N; ++i) {
-        res[i] = lhs[i] + rhs[i];
-    }
-}
-
-template<typename T, int N>
-PointTmpl<T, N> operator*(const PointTmpl<T, N> &lhs, const T x) {
-    PointTmpl<T, N> res;
-    for (int i = 0; i < N; ++i) {
-        res[i] = lhs[i] * x;
-    }
-}
-
-template<typename T, int N>
-PointTmpl<T, N> operator<(const PointTmpl<T, N> &lhs, const PointTmpl<T, N> &rhs) {
-    PointTmpl<T, N> res;
-    for (int i = 0; i < N; ++i) {
-        if (lhs[i] != rhs[i]) return lhs[i] < rhs[i];
-    }
-    return false;
-}
-
-template<typename T, int N>
-PointTmpl<T, N> operator==(const PointTmpl<T, N> &lhs, const PointTmpl<T, N> &rhs) {
-    PointTmpl<T, N> res;
-    for (int i = 0; i < N; ++i) {
-        if (lhs[i] != rhs[i]) return false;
-    }
-    return true;
-}
-
-
-template<typename T, int N>
-PointTmpl<T, N> operator!=(const PointTmpl<T, N> &lhs, const PointTmpl<T, N> &rhs) {
-    return !(lhs == rhs);
 }
 
 using Point = PointTmpl<int64, 2>;

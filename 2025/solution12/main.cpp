@@ -52,20 +52,6 @@ T from_string(const std::string &s) {
     return x;
 }
 
-template<typename T>
-T gcd(T a, T b) {
-    return b ? gcd(b, a % b) : a;
-}
-
-template<typename T=int64>
-T lcm(T a, T b) {
-    return a / gcd(a, b) * b;
-}
-
-static const std::vector<std::string> numbers = {
-        "zero",
-        "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
-};
 
 static auto readLines(const std::string &filepath) {
     std::ifstream fin{filepath};

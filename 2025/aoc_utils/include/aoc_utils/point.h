@@ -148,4 +148,48 @@ std::ostream &operator<<(std::ostream &os, const PointTmpl<T, N> &p) {
     }
     return os;
 }
+
+
+template<typename T, int N>
+PointTmpl<T, N> operator+(const PointTmpl<T, N> &lhs, const PointTmpl<T, N> &rhs) {
+    PointTmpl<T, N> res;
+    for (int i = 0; i < N; ++i) {
+        res[i] = lhs[i] + rhs[i];
+    }
+    return res;
+}
+
+template<typename T, int N, typename MultiplierType>
+PointTmpl<MultiplierType, N> operator*(const PointTmpl<T, N> &lhs, const MultiplierType x) {
+    PointTmpl<MultiplierType, N> res;
+    for (int i = 0; i < N; ++i) {
+        res[i] = lhs[i] * x;
+    }
+    return res;
+}
+
+template<typename T, int N>
+PointTmpl<T, N> operator<(const PointTmpl<T, N> &lhs, const PointTmpl<T, N> &rhs) {
+    PointTmpl<T, N> res;
+    for (int i = 0; i < N; ++i) {
+        if (lhs[i] != rhs[i]) return lhs[i] < rhs[i];
+    }
+    return false;
+}
+
+template<typename T, int N>
+PointTmpl<T, N> operator==(const PointTmpl<T, N> &lhs, const PointTmpl<T, N> &rhs) {
+    PointTmpl<T, N> res;
+    for (int i = 0; i < N; ++i) {
+        if (lhs[i] != rhs[i]) return false;
+    }
+    return true;
+}
+
+
+template<typename T, int N>
+PointTmpl<T, N> operator!=(const PointTmpl<T, N> &lhs, const PointTmpl<T, N> &rhs) {
+    return !(lhs == rhs);
+}
+
 };  // namespace aoc_utils

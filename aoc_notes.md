@@ -286,3 +286,9 @@ barebones for BFS, with parameters such as:
 
 #define A auto
  
+TODO
+ensure that all header files are declared (maybe with modules?)
+
+TODO remove `#include <bits/stdc++.h>`
+
+TODO do not use int, where size_t or int32_t/int64_t is meant.

@@ -46,7 +46,7 @@ static auto mergeRanges(std::vector<Range<T>> &ranges) {
 /// @brief returns two-elements tuple of: ranges(sorted and merged) and queries
 /// @param filename path to input file
 static auto read_input(const std::string &filename) {
-    const auto filepath = aoc_utils::get_input_file(filename, 5);
+    const auto filepath = aoc_utils::get_input_filepath(filename, 5);
     auto lines = aoc_utils::read_lines(filepath);
     IDRanges ranges;
     int i0;
