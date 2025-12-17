@@ -77,7 +77,7 @@ static int star1(const std::string &filepath, const int firstDim, const int seco
 }
 
 static void star2(const std::string &filepath, const int firstDim, const int secondDim) {
-    auto robots = readRobots("input.txt", firstDim, secondDim);
+    auto robots = readRobots(aoc_utils::INPUT_FILE, firstDim, secondDim);
     for (int k = 0; k < 101 * 103; ++k) {
         std::vector<std::string> lines(secondDim, std::string(firstDim, '.'));
         for (auto [p, v]: robots) {
@@ -93,8 +93,8 @@ static void star2(const std::string &filepath, const int firstDim, const int sec
 }
 
 int main() {
-    std::cout << star1("example_input.txt", 11, 7) << std::endl;
-    std::cout << star1("input.txt", 101, 103) << std::endl;
-    star2("input.txt", 101, 103); // next we search for the Christmas tree in generated files
+    std::cout << star1(aoc_utils::EXAMPLE_INPUT_FILE, 11, 7) << std::endl;
+    std::cout << star1(aoc_utils::INPUT_FILE, 101, 103) << std::endl;
+    star2(aoc_utils::INPUT_FILE, 101, 103); // next we search for the Christmas tree in generated files
     return 0;
 }

@@ -41,8 +41,8 @@ using vstring = vector<string>;
 
 static auto INF = std::numeric_limits<int>::max();
 
-static const std::string EXAMPLE_INPUT_FILE = "example_input.txt";
-static const std::string INPUT_FILE = "input.txt";
+static const std::string EXAMPLE_INPUT_FILE = aoc_utils::EXAMPLE_INPUT_FILE;
+static const std::string INPUT_FILE = aoc_utils::INPUT_FILE;
 
 template<typename T = int64>
 T from_string(const std::string &s) {

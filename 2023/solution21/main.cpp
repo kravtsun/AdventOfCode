@@ -66,7 +66,7 @@ static const pii speedDown{+1, 0};
 static const vpii speeds{speedLeft, speedRight, speedUp, speedDown};
 
 int main() {
-    std::ifstream fin{WORKDIR "input.txt"};
+    std::ifstream fin{WORKDIR aoc_utils::INPUT_FILE};
     assert(fin.is_open());
     std::cin.rdbuf(fin.rdbuf());
 

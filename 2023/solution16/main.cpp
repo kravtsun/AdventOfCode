@@ -143,7 +143,7 @@ int energizedTiles(const vs& field, const Beam& startBeam)
 }
 
 int main() {
-    std::ifstream fin{WORKDIR "input.txt"};
+    std::ifstream fin{WORKDIR aoc_utils::INPUT_FILE};
     assert(fin.is_open());
     std::cin.rdbuf(fin.rdbuf());
 

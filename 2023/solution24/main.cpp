@@ -224,7 +224,7 @@ std::vector<T> gauss(std::vector<std::vector<T>> a) {
 }
 
 int main() {
-    std::ifstream fin{WORKDIR "input.txt"};
+    std::ifstream fin{WORKDIR aoc_utils::INPUT_FILE};
 //    std::ifstream fin{WORKDIR "input_sample.txt"};
     assert(fin.is_open());
     std::cin.rdbuf(fin.rdbuf());

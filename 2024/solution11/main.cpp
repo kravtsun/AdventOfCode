@@ -118,7 +118,7 @@ star2(std::map<std::pair<size_t, int64_t>, size_t> &memo, const std::vector<int6
 static auto testStar2() {
     // filename, number of blinks -> result after specified number of blinks
     const std::map<std::pair<std::string, size_t>, size_t> expectedResults = {
-            {{"example_input.txt",  1},  7},
+            {{aoc_utils::EXAMPLE_INPUT_FILE,  1},  7},
             {{"example_input1.txt", 6},  22},
             {{"example_input1.txt", 25}, 55312},
     };
@@ -141,7 +141,7 @@ static auto star2(const std::string &filepath) {
 
 int main() {
     testStar2();
-    std::cout << star1("input.txt") << std::endl; // 197157
-    std::cout << star2("input.txt") << std::endl; // 234430066982597
+    std::cout << star1(aoc_utils::INPUT_FILE) << std::endl; // 197157
+    std::cout << star2(aoc_utils::INPUT_FILE) << std::endl; // 234430066982597
     return 0;
 }

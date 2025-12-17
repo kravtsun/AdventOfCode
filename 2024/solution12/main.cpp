@@ -174,7 +174,7 @@ static void testStar1() {
             {"example_input1.txt", 140},
             {"example_input2.txt", 772},
             {"example_input3.txt", 1930},
-            {"input.txt",          1375476},
+            {aoc_utils::INPUT_FILE,          1375476},
     };
 
     testFiles(expectedOutputs, false);
@@ -187,7 +187,7 @@ static void testStar2() {
             {"example_input4.txt", 236},
             {"example_input5.txt", 368},
             {"example_input3.txt", 1206},
-            {"input.txt",          821372},
+            {aoc_utils::INPUT_FILE,          821372},
     };
 
     testFiles(expectedOutputs, true);
