@@ -1,139 +1,92 @@
 // This software was partially written using Suggestions from GitHub Copilot.
-#include <bits/stdc++.h>
+#include <string>
+#include <vector>
+#include <iostream>
+#include <sstream>
+#include <functional>
+#include <numeric>
 
-#define all(x) x.begin(), x.end()
+#include "aoc_utils/io_helpers.h"
 
-using int64 = long long;
-using vs = std::vector<std::string>;
-using vint = std::vector<int>;
-using vint64 = std::vector<int64>;
-using pii = std::pair<int, int>;
-using pii64 = std::pair<int64, int64>;
+using int64 = std::int64_t;
 
-template<typename T = int64>
-T from_string(const std::string &s) {
-    std::istringstream is(s);
-    T x;
-    is >> x;
-    return x;
-}
+// Function to get the operation (addition or multiplication) based on the sign
+static auto get_sign_op(char sign) {
+    using op_type = std::function<int64(int64, int64)>;
+    static const op_type add = [](int64 a, int64 b) { return a + b; };
+    static const op_type multiply = [](int64 a, int64 b) { return a * b; };
 
-template<typename T>
-T gcd(T a, T b) {
-    return b ? gcd(b, a%b) : a;
-}
-
-template<typename T=int64> T lcm(T a, T b) {
-    return a / gcd(a, b) * b;
-}
-
-//struct Vertex {
-//    Vertex() {};
-//};
-
-// BFS
-//std::vector<std::vector<int>> g;
-//std::vector<bool> used(n, false);
-//std::queue<Vertex> q;
-//q.push(v);
-//used[v] = true;
-//
-//while (!q.empty()) {
-//auto v = q.front();
-//q.pop();
-//for (auto to : g[v].tos) {
-//if (!used[to]) {
-//q.push(to);
-//used[to] = true;
-//}
-//}
-//}
-
-//
-//std::ifstream fin{WORKDIR "input.txt"};
-//assert(fin.is_open());
-//std::cin.rdbuf(fin.rdbuf());
-
-static const std::vector<std::string> numbers = {
-    "zero",
-    "one","two","three","four","five","six","seven","eight","nine",
-};
-
-static auto readLines(const std::string &filepath) {
-    std::ifstream fin{filepath};
-    assert(fin.is_open());
-    std::vector<std::string> lines;
-    std::string line;
-    while (std::getline(fin, line)) {
-        lines.push_back(line);
+    if (sign == '+') {
+        return add;
+    } else if (sign == '*') {
+        return multiply;
+    } else {
+        throw std::runtime_error("Unknown sign: " + std::string(1, sign));
     }
-    return lines;
 }
 
-using Point = std::pair<int, int>;
+// Function to solve the first part of the problem
+static auto star1(const std::string &filename) {
+    // Read input lines
+    auto lines =
+        aoc_utils::read_lines(aoc_utils::get_input_filepath(filename, 6));
 
-static auto addPoint(const Point &lhs, const Point &rhs) {
-    return Point{lhs.first + rhs.first, lhs.second + rhs.second};
-}
+    // Extract the signs from the last line
+    auto signs = [](const std::string &signs_line) {
+        std::istringstream is{signs_line};
+        char c;
+        std::vector<char> signs;
+        while (is >> c) {
+            signs.push_back(c);
+        }
+        return signs;
+    }(lines.back());
+    lines.pop_back();
 
-static bool isGoodPoint(const Point &p, int n, int m) {
-    return p.first >= 0 && p.first < n && p.second >= 0 && p.second < m;
-}
+    // Parse the numbers from the remaining lines
+    std::vector<std::vector<int64>> numbers;
+    numbers.reserve(lines.size());
+    for (const auto &line : lines) {
+        numbers.emplace_back();
+        std::istringstream is{line};
+        int num;
+        while (is >> num) {
+            numbers.back().push_back(num);
+        }
+    }
 
-using namespace std;
-
-static int char2digit(char c) {
-    if (isalpha(c)) {
-        assert(tolower(c) == c || toupper(c) == c);
-        if (tolower(c) == c) {
-            return 10 + c - 'a';
+    // Perform calculations based on the signs
+    std::vector<int64> results(signs.size());
+    for (size_t i = 0; i < numbers.size(); ++i) {
+        if (numbers[i].size() != signs.size()) {
+            throw std::runtime_error(
+                "Non-matching sizes for numbers and signs");
+        }
+        if (i == 0) {
+            results = numbers[i];
         } else {
-            return 10 + c - 'A';
+            for (size_t j = 0; j < signs.size(); ++j) {
+                results[j] = get_sign_op(signs[j])(results[j], numbers[i][j]);
+            }
         }
     }
-    return c - '0';
+
+    // Return the sum of the results
+    return std::accumulate(results.begin(), results.end(), 0LL);
 }
 
-template<typename T>
-static auto mergeRanges(vector<pair<T, T>> ranges) {
-    vector<pair<T, T>> newRanges;
-    if (ranges.empty()) return newRanges;
+// Function to solve the second part of the problem
+static auto star2(const std::string &filename) {
+    // Read input lines
+    auto lines =
+        aoc_utils::read_lines(aoc_utils::get_input_filepath(filename, 6));
 
-    sort(ranges.begin(), ranges.end());
-
-    auto curRange = ranges.front();
-    for (int i = 1; i < ranges.size(); ++i) {
-        auto r = ranges[i];
-        if (r.second <= curRange.second) {
-            continue;
-        }
-        if (r.first <= curRange.second) {
-            curRange.second = r.second;
-        } else {
-            assert(r.first > curRange.second);
-            newRanges.push_back(curRange);
-            curRange = r;
-        }
-    }
-    newRanges.push_back(curRange);
-    return newRanges;
-}
-
-int main() {
-//    std::ifstream fin{"input.txt"};
-//    std::ifstream fin{"example_input.txt"};
-//    assert(fin.is_open());
-//    std::cin.rdbuf(fin.rdbuf());
-
-//    auto lines = readLines("example_input.txt");
-    auto lines = readLines("input.txt");
-
-    using pic = pair<int, char>;
-    vector<pic> signs;
+    // Extract the positions and signs from the last line
+    using pic = std::pair<int, char>;
+    std::vector<pic> signs;
     {
         auto signsLine = lines.back();
-        char c;
-        for (int i = 0; i < signsLine.size(); ++i) {
+        for (size_t i = 0; i < signsLine.size(); ++i) {
             if (signsLine[i] != ' ') {
                 signs.emplace_back(i, signsLine[i]);
             }
@@ -143,28 +96,24 @@ int main() {
 
     int64 res = 0;
 
-    for (int is = 0; is < signs.size(); ++is) {
+    // Perform calculations based on the signs and their positions
+    for (size_t is = 0; is < signs.size(); ++is) {
         auto [signPos, sign] = signs[is];
-        std::function<int64(int64, int64)> op;
-        if (sign == '+') {
-            op = [](int64 a, int64 b) { return a + b; };
-        } else if (sign == '*') {
-            op = [](int64 a, int64 b) { return a * b; };
-        } else {
-            assert(false);
-        }
+        auto op = get_sign_op(sign);
 
-        int prevPos = is + 1 == signs.size() ? lines[0].size() : signs[is + 1].first;
+        int nextPos =
+            (is + 1 == signs.size()) ? lines[0].size() : signs[is + 1].first;
         int64 cur_res = -1;
-        for (int j = prevPos - 1; j >= signPos; --j) {
+
+        for (int j = nextPos - 1; j >= signPos; --j) {
             int64 cur_num = 0;
-            for (int i = 0; i < lines.size(); ++i) {
-                if (lines[i][j] != ' ') {
+            for (const auto &line : lines) {
+                if (line[j] != ' ') {
                     cur_num *= 10;
-                    cur_num += char2digit(lines[i][j]);
+                    using aoc_utils::char2digit;
+                    cur_num += char2digit(line[j]);
                 }
             }
-            std::cout << "cur_num=" << cur_num << endl;
             if (cur_num == 0) continue;
             if (cur_res == -1) {
                 cur_res = cur_num;
@@ -172,10 +121,17 @@ int main() {
                 cur_res = op(cur_res, cur_num);
             }
         }
-        std::cout << "\tcur_res=" << cur_res << endl;
         res += cur_res;
     }
 
-    cout << res << endl;
+    return res;
+}
+
+int main() {
+    // Run and print results for both parts of the problem
+    std::cout << star1("example_input.txt") << std::endl;
+    std::cout << star1("input.txt") << std::endl;
+    std::cout << star2("example_input.txt") << std::endl;
+    std::cout << star2("input.txt") << std::endl;
     return 0;
 }

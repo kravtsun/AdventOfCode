@@ -1,9 +1,14 @@
 // This software was partially written using Suggestions from GitHub Copilot.
-#include <bits/stdc++.h>
+#include <iostream>
+#include <string>
 #include "aoc_utils/io_helpers.h"
 
-static int star1(const std::string &filepath) {
-    auto lines = read_lines(filepath);
+using aoc_utils::get_input_filepath;
+using aoc_utils::read_lines;
+using aoc_utils::char2digit;
+
+static int star1(const std::string &filename) {
+    auto lines = read_lines(get_input_filepath(filename, 3));
 
     const auto num_from_chars = [](char a, char b) {
         return char2digit(a) * 10 + char2digit(b);
@@ -77,25 +82,26 @@ static void DFS(const std::string &s, const int i, const int digits_rest_cnt,
         return;
     }
 
+    const int BASE = 10;
     // used[i] holds true only if we already tried digit i as next.
     // Greedy approach - if we try taking digit i now on the first available
     // position, we do not limit our window of opportunities (so the same digit
     // can repeat)
-    std::vector<bool> used(10, false);
+    std::vector<bool> used(BASE, false);
 
     for (int j = i; j < s.size(); ++j) {
         char c = s[j];
         auto d = char2digit(c);
         if (!used[d]) {
             used[d] = true;
-            auto cur_sum = 10 * iteration_sum + d;
+            auto cur_sum = BASE * iteration_sum + d;
             DFS(s, j + 1, digits_rest_cnt - 1, cur_sum, best_sum);
         }
     }
 }
 
-static std::int64_t star2(const std::string &filepath) {
-    auto lines = read_lines(filepath);
+static std::int64_t star2(const std::string &filename) {
+    auto lines = read_lines(get_input_filepath(filename, 3));
 
     std::int64_t res = 0;
     for (const auto &line : lines) {

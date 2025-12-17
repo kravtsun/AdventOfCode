@@ -12,7 +12,7 @@ static auto star1(const std::string &filename) {
     auto lines = aoc_utils::read_lines(aoc_utils::get_input_filepath(filename, 9));
 
     vector<Point> points;
-    for (auto line : lines) {
+    for (const auto& line : lines) {
         istringstream is(line);
         int a, b;
         char c;
@@ -23,8 +23,8 @@ static auto star1(const std::string &filename) {
     std::int64_t res = 0;
     for (int i = 0; i < points.size(); ++i) {
         for (int j = i + 1; j < points.size(); ++j) {
-            auto curArea = std::abs(points[i].x() - points[j].x() + 1) * std::abs(points[i].y() - points[j].y() + 1);
-            res = std::max(res, curArea);
+            auto cur_area = std::abs(points[i].x() - points[j].x() + 1) * std::abs(points[i].y() - points[j].y() + 1);
+            res = std::max(res, cur_area);
         }
     }
 
@@ -36,7 +36,7 @@ static auto star2(const std::string &filename) {
     using PointDouble = aoc_utils::PointTmpl<double, 2>;
     using PointInt = aoc_utils::PointTmpl<int64_t, 2>;
     vector<PointInt> points;
-    for (auto line : lines) {
+    for (const auto& line : lines) {
         istringstream is(line);
         int a, b;
         char c;
@@ -59,11 +59,11 @@ static auto star2(const std::string &filename) {
         for (int j = i + 1; j < n; ++j) {
             bool isGood = true;
             auto curArea = std::abs(points[i].x() - points[j].x() + 1) * std::abs(points[i].y() - points[j].y() + 1);
-            PointInt pMin{std::min(points[i].x(), points[j].x()), std::min(points[i].y(), points[j].y())};
-            PointInt pMax{std::max(points[i].x(), points[j].x()), std::max(points[i].y(), points[j].y())};
+            PointInt p_min{std::min(points[i].x(), points[j].x()), std::min(points[i].y(), points[j].y())};
+            PointInt p_max{std::max(points[i].x(), points[j].x()), std::max(points[i].y(), points[j].y())};
             for (auto p : points_extended) {
-                if (p.x() > pMin.x() && p.x() < pMax.x() &&
-                    p.y() > pMin.y() && p.y() < pMax.y()) {
+                if (p.x() > p_min.x() && p.x() < p_max.x() &&
+                    p.y() > p_min.y() && p.y() < p_max.y()) {
                     isGood = false;
                     break;
                 }

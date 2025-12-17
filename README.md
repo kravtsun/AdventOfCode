@@ -32,9 +32,11 @@ Advent of Code adventures in C++ adventofcode.com/
 
 # 2025 Languages by folder
 
+Solutions can be build into the folder `build` by command `cmake -B build -S .`
+
 - 2025/solution01 - Python3: run with `python3 main.py`
-- 2025/solution02 - TODO
-- 2025/solution03 - TODO
+- 2025/solution02 - Haskell: compile with `ghc ./main.hs` and run with `./main`
+- 2025/solution03 - C++-20
 - 2025/solution04 - TODO
 - 2025/solution05 - TODO
 - 2025/solution06 - TODO

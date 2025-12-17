@@ -1,244 +1,91 @@
 // This software was partially written using Suggestions from GitHub Copilot.
-#include <bits/stdc++.h>
+#include <vector>
+#include <string>
+#include <queue>
+#include <map>
+#include <fstream>
+#include <sstream>
+#include <iostream>
+#include <cassert>
+#include <algorithm>
 
-#include <utility>
+#include "aoc_utils/io_helpers.h"
+#include "aoc_utils/point.h"
+#include "aoc_utils/field.h"
 
-using namespace std;
+using int64 = std::int64_t;
+using aoc_utils::Field;
+using Point = aoc_utils::Field::Point;
 
-#define all(x) x.begin(), x.end()
-#define A auto
+static int64 solve(const std::vector<std::string> &lines, bool is_second_star) {
+    Field f{lines};
 
-using int64 = long long;
-using vs = std::vector<std::string>;
-using vint = std::vector<int>;
-using vint64 = std::vector<int64>;
-using pii = std::pair<int, int>;
-using pii64 = std::pair<int64, int64>;
-using vpii = vector<pii>;
-using vpii64 = vector<pii64>;
+    auto start_pos = f.symbol_location('S');
 
-template<typename T = int64>
-T from_string(const std::string &s) {
-    std::istringstream is(s);
-    T x;
-    is >> x;
-    return x;
-}
+    std::queue<Point> q;
+    std::map<Point, bool> used;
+    std::map<Point, int64> d;
+    q.push(start_pos);
+    used[start_pos] = true;
+    d[start_pos] = 1;
 
-
-static auto readLines(const std::string &filepath) {
-    std::ifstream fin{filepath};
-    assert(fin.is_open());
-    std::vector<std::string> lines;
-    std::string line;
-    while (std::getline(fin, line)) {
-        lines.push_back(line);
-    }
-    return lines;
-}
-
-using Point = std::pair<int, int>;
-std::string to_string(const Point &p) {
-    return "(" + std::to_string(p.first) + ", " + std::to_string(p.second) + ")";
-}
-
-static auto getPointLeft(const Point &lhs) {
-    return Point{lhs.first, lhs.second - 1};
-}
-
-static auto getPointRight(const Point &lhs) {
-    return Point{lhs.first, lhs.second + 1};
-}
-
-static auto getPointUp(const Point &lhs) {
-    return Point{lhs.first - 1, lhs.second};
-}
-
-static auto getPointDown(const Point &lhs) {
-    return Point{lhs.first + 1, lhs.second};
-}
-
-static auto addPoint(const Point &lhs, const Point &rhs) {
-    return Point{lhs.first + rhs.first, lhs.second + rhs.second};
-}
-
-static bool isGoodPoint(const Point &p, int n, int m) {
-    return p.first >= 0 && p.first < n && p.second >= 0 && p.second < m;
-}
-
-static int char2digit(char c) {
-    if (isalpha(c)) {
-        assert(tolower(c) == c || toupper(c) == c);
-        if (tolower(c) == c) {
-            return 10 + c - 'a';
-        } else {
-            return 10 + c - 'A';
-        }
-    }
-    return c - '0';
-}
-
-template<typename T>
-static auto mergeRanges(vector<pair<T, T>> ranges) {
-    vector<pair<T, T>> newRanges;
-    if (ranges.empty()) return newRanges;
-
-    sort(ranges.begin(), ranges.end());
-
-    auto curRange = ranges.front();
-    for (int i = 1; i < ranges.size(); ++i) {
-        auto r = ranges[i];
-        if (r.second <= curRange.second) {
-            continue;
-        }
-        if (r.first <= curRange.second) {
-            curRange.second = r.second;
-        } else {
-            assert(r.first > curRange.second);
-            newRanges.push_back(curRange);
-            curRange = r;
-        }
-    }
-    newRanges.push_back(curRange);
-    return newRanges;
-}
-
-struct Field {
-    explicit Field(const std::string &filepath)
-            : lines(readLines(filepath)) {
-        checkLines();
-    }
-
-    explicit Field(std::vector<std::string> lines)
-            : lines(std::move(lines)) {
-        checkLines();
-    }
-
-    [[nodiscard]] bool isGoodPoint(const Point &p) const {
-        const auto n = height();
-        const auto m = width();
-        return p.first >= 0 && p.first < n && p.second >= 0 && p.second < m;
-    }
-
-    char &operator[](const Point &p) {
-        if (!isGoodPoint(p)) {
-            throw std::runtime_error("Bad point: " + to_string(p));
-        }
-        return lines[p.first][p.second];
-    }
-
-    const char &operator[](const Point &p) const {
-        return lines[p.first][p.second];
-    }
-
-    int height() const {
-        return lines.size();
-    }
-
-    int width() const {
-        return lines[0].size();
-    }
-
-    auto symbolLoc(char symbol) const {
-        for (int i = 0; i < height(); ++i) {
-            for (int j = 0; j < width(); ++j) {
-                if (lines[i][j] == symbol) {
-                    return Point{i, j};
-                }
-            }
-        }
-        throw std::runtime_error("Not found symbol: " + std::string(1, symbol));
-//        return {-1, -1};
-    }
-
-private:
-    std::vector<std::string> lines;
-    void checkLines() const {
-        assert(!lines.empty());
-        auto w = lines[0].size();
-        for (const auto &l: lines) {
-            if (l.size() != w) {
-                throw std::runtime_error("Inconsistent line: \n" + l);
-            }
-        }
-    }
-};
-
-static int64 star(const std::string &filepath, bool isSecondStar) {
-    auto lines = readLines(filepath);
-
-    Point startPos;
-    for (int i = 0; i < lines.size(); ++i) {
-        for (int j = 0; j < lines[0].size(); ++j) {
-            if (lines[i][j] == 'S') {
-                startPos = {i, j};
-                break;
-            }
-        }
-    }
-
-    queue<Point> q;
-    map<Point, bool> used;
-    map<Point, int64> d;
-    q.push(startPos);
-    used[startPos] = true;
-    d[startPos] = 1;
-
-    const auto n = lines.size();
-    const auto m = lines[0].size();
-    const auto try_go = [&](const Point &from, const Point &pNext) {
-        if (isGoodPoint(pNext, n, m)) {
-            d[pNext] += d[from];
-            if (!used[pNext]) {
-                used[pNext] = true;
-                q.push(pNext);
+    auto try_go = [&](const Point &from, const Point &next, auto &lines) {
+        if (f.is_good_point(next)) {
+            d[next] += d[from];
+            if (!used[next]) {
+                used[next] = true;
+                q.push(next);
             }
         }
     };
 
-    int64 res = 0;
+    int64 result = 0;
+
+    Field grid = f; // Copy grid to modify during traversal
+
     while (!q.empty()) {
-//        for (auto l : lines) {
-//            cout << l << endl;
-//        }
-//        cout << endl;
         Point p = q.front();
         q.pop();
-        lines[p.first][p.second] = '|';
-        auto pDown = getPointDown(p);
-        if (!isGoodPoint(pDown, n, m)) continue;
+        grid[p] = '|';
+//        std::cout << grid << std::endl;
 
-        if (lines[pDown.first][pDown.second] == '^') {
-            res += !isSecondStar;
-            auto pLeft = getPointLeft(pDown);
-            auto pRight = getPointRight(pDown);
-            try_go(p, pLeft);
-            try_go(p, pRight);
+        auto down = p.down();
+        if (!grid.is_good_point(down)) {
+            continue;
+        }
+
+        if (grid[down] == '^') {
+            result += !is_second_star;
+            try_go(p, down.left(), grid);
+            try_go(p, down.right(), grid);
         } else {
-            try_go(p, pDown);
+            try_go(p, down, grid);
         }
     }
-    if (isSecondStar) {
-        for (int i = 0; i < m; ++i) {
-            res += d[Point{n - 1, i}];
+
+    if (is_second_star) {
+        for (int i = 0; i < f.width(); ++i) {
+            result += d[{i, f.height() - 1}];
         }
     }
-    return res;
+
+    return result;
 }
 
-static auto star1(const std::string &filepath) {
-    return star(filepath, false);
+static int64 star1(const std::string &filename) {
+    auto lines = aoc_utils::read_lines(aoc_utils::get_input_filepath(filename, 7));
+    return solve(lines, false);
 }
 
-static auto star2(const std::string &filepath) {
-    return star(filepath, true);
+static int64 star2(const std::string &filename) {
+    auto lines = aoc_utils::read_lines(aoc_utils::get_input_filepath(filename, 7));
+    return solve(lines, true);
 }
 
 int main() {
-    cout << star1("example_input.txt") << endl;
-    cout << star1("input.txt") << endl;
-    cout << star2("example_input.txt") << endl;
-    cout << star2("input.txt") << endl;
-
+    std::cout << star1("example_input.txt") << std::endl;
+    std::cout << star1("input.txt") << std::endl;
+    std::cout << star2("example_input.txt") << std::endl;
+    std::cout << star2("input.txt") << std::endl;
     return 0;
 }

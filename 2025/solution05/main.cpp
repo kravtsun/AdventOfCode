@@ -1,5 +1,3 @@
-// This software was partially written using Suggestions from GitHub Copilot.
-
 #include <string>
 #include <vector>
 #include <fstream>
@@ -9,6 +7,8 @@
 #include <algorithm>
 #include <cassert>
 #include <iostream>
+#include <ranges>
+#include <format>
 
 #include "aoc_utils/io_helpers.h"
 
@@ -19,40 +19,34 @@ using IDRange = Range<ID>;
 using IDRanges = std::vector<IDRange>;
 
 template<typename T>
-static auto mergeRanges(std::vector<Range<T>> &ranges) {
-    std::vector<Range<T>> newRanges;
-    if (ranges.empty()) return newRanges;
+static auto merge_ranges(std::vector<Range<T>> &ranges) {
+    if (ranges.empty()) return std::vector<Range<T>>{};
 
-    std::sort(ranges.begin(), ranges.end());
+    std::ranges::sort(ranges);
+    std::vector<Range<T>> new_ranges;
 
-    auto curRange = ranges.front();
-    for (int i = 1; i < ranges.size(); ++i) {
-        auto r = ranges[i];
-        if (r.second <= curRange.second) {
-            continue;
-        }
-        if (r.first <= curRange.second) {
-            curRange.second = r.second;
+    auto cur_range = ranges.front();
+    for (const auto &[start, end] : ranges | std::views::drop(1)) {
+        if (end <= cur_range.second) continue;
+        if (start <= cur_range.second) {
+            cur_range.second = end;
         } else {
-            assert(r.first > curRange.second);
-            newRanges.push_back(curRange);
-            curRange = r;
+            new_ranges.push_back(cur_range);
+            cur_range = {start, end};
         }
     }
-    newRanges.push_back(curRange);
-    return newRanges;
+    new_ranges.push_back(cur_range);
+    return new_ranges;
 }
 
-/// @brief returns two-elements tuple of: ranges(sorted and merged) and queries
-/// @param filename path to input file
+/// @brief Returns a tuple of merged ranges and queries
 static auto read_input(const std::string &filename) {
     const auto filepath = aoc_utils::get_input_filepath(filename, 5);
     auto lines = aoc_utils::read_lines(filepath);
+
     IDRanges ranges;
-    int i0;
-    for (i0 = 0; i0 < lines.size(); ++i0) {
-        const auto line = lines[i0];
-        if (line.empty()) break;
+    auto it = std::ranges::find(lines, ""); // Find the empty line
+    for (const auto &line : lines | std::views::take(it - lines.begin())) {
         std::istringstream is(line);
         ID a, b;
         char c;
@@ -60,42 +54,29 @@ static auto read_input(const std::string &filename) {
         assert(c == '-');
         ranges.emplace_back(a, b);
     }
-    ranges = mergeRanges(ranges);
+    ranges = merge_ranges(ranges);
 
-    std::vector<std::uint64_t> queries;
-    for (int j = i0 + 1; j < lines.size(); ++j) {
-        auto l = lines[j];
-        queries.push_back(stoll(l));
+    std::vector<ID> queries;
+    for (const auto &line : lines | std::views::drop(it - lines.begin() + 1)) {
+        queries.push_back(std::stoull(line));
     }
-    return make_tuple(ranges, queries);
+    return std::make_tuple(ranges, queries);
 }
 
 static auto star1(const std::string &filepath) {
-    auto [ranges, queries] = read_input(filepath);
-    int res = 0;
-    for (auto num: queries) {
-        bool isFresh = false;
-        for (auto [a, b]: ranges) {
-            if (num >= a && num <= b) {
-                isFresh = true;
-                break;
-            }
-        }
-        if (isFresh) {
-            res++;
-        }
-    }
-
-    return res;
+    const auto [ranges, queries] = read_input(filepath);
+    return std::ranges::count_if(queries, [&](ID num) {
+        return std::ranges::any_of(ranges, [&](const auto &[a, b]) {
+            return num >= a && num <= b;
+        });
+    });
 }
 
 static auto star2(const std::string &filepath) {
-    auto [ranges, _] = read_input(filepath);
-    std::uint64_t res = 0;
-    for (auto r: ranges) {
-        res += r.second - r.first + 1;
-    }
-    return res;
+    const auto [ranges, _] = read_input(filepath);
+    return std::accumulate(ranges.begin(), ranges.end(), std::uint64_t{0}, [](auto acc, const auto &[a, b]) {
+        return acc + (b - a + 1);
+    });
 }
 
 int main() {

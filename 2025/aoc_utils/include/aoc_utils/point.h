@@ -3,20 +3,22 @@
 
 #include <array>
 #include <iostream>
+#include <sstream>
 #include <cmath>
 #include <cstdint>
 
 namespace aoc_utils {
 template <typename T = int, int N = 2>
-struct PointTmpl {
+class PointTmpl {
+   public:
     static_assert(N > 1, "Number of coordinates should be bigger than 1");
     std::array<T, N> coords;
 
-    explicit PointTmpl(const std::array<T, N> &arr) : coords(arr) {}
+    explicit PointTmpl(const std::array<T, N> &arr = {}) : coords(arr) {}
 
-    PointTmpl(T y, T x)
+    PointTmpl(T x, T y)
         requires(N == 2)
-        : coords({y, x}) {}
+        : coords({x, y}) {}
 
     PointTmpl(T x, T y, T z)
         requires(N == 3)
@@ -31,6 +33,22 @@ struct PointTmpl {
     PointTmpl &operator=(const PointTmpl &rhs) = default;
 
     PointTmpl &operator=(PointTmpl &&rhs) = default;
+
+    [[nodiscard]] const T &first() const {
+        return coords[0];
+    }
+
+    T &first() {
+        return coords[0];
+    }
+
+    [[nodiscard]] const T &second() const {
+        return coords[1];
+    }
+
+    T &second() {
+        return coords[1];
+    }
 
     [[nodiscard]] const T &x() const {
         return coords[0];
@@ -105,23 +123,13 @@ struct PointTmpl {
     template <typename U, int M>
     friend std::ostream &operator<<(std::ostream &os, const PointTmpl<U, M> &p);
 
+    std::string to_string() const {
+        std::ostringstream os;
+        os << *this;
+        return os.str();
+    }
+
     [[nodiscard]] auto left() const
-        requires(N == 2)
-    {
-        std::array<T, N> newCoords = coords;
-        newCoords[1]--;
-        return PointTmpl<T, N>(newCoords);
-    }
-
-    [[nodiscard]] auto right() const
-        requires(N == 2)
-    {
-        std::array<T, N> newCoords = coords;
-        newCoords[1]++;
-        return PointTmpl<T, N>(newCoords);
-    }
-
-    [[nodiscard]] auto up() const
         requires(N == 2)
     {
         std::array<T, N> newCoords = coords;
@@ -129,11 +137,27 @@ struct PointTmpl {
         return PointTmpl<T, N>(newCoords);
     }
 
-    [[nodiscard]] auto down() const
+    [[nodiscard]] auto right() const
         requires(N == 2)
     {
         std::array<T, N> newCoords = coords;
         newCoords[0]++;
+        return PointTmpl<T, N>(newCoords);
+    }
+
+    [[nodiscard]] auto up() const
+        requires(N == 2)
+    {
+        std::array<T, N> newCoords = coords;
+        newCoords[1]--;
+        return PointTmpl<T, N>(newCoords);
+    }
+
+    [[nodiscard]] auto down() const
+        requires(N == 2)
+    {
+        std::array<T, N> newCoords = coords;
+        newCoords[1]++;
         return PointTmpl<T, N>(newCoords);
     }
 };
@@ -169,7 +193,7 @@ PointTmpl<MultiplierType, N> operator*(const PointTmpl<T, N> &lhs, const Multipl
 }
 
 template<typename T, int N>
-PointTmpl<T, N> operator<(const PointTmpl<T, N> &lhs, const PointTmpl<T, N> &rhs) {
+bool operator<(const PointTmpl<T, N> &lhs, const PointTmpl<T, N> &rhs) {
     PointTmpl<T, N> res;
     for (int i = 0; i < N; ++i) {
         if (lhs[i] != rhs[i]) return lhs[i] < rhs[i];
@@ -178,7 +202,7 @@ PointTmpl<T, N> operator<(const PointTmpl<T, N> &lhs, const PointTmpl<T, N> &rhs
 }
 
 template<typename T, int N>
-PointTmpl<T, N> operator==(const PointTmpl<T, N> &lhs, const PointTmpl<T, N> &rhs) {
+bool operator==(const PointTmpl<T, N> &lhs, const PointTmpl<T, N> &rhs) {
     PointTmpl<T, N> res;
     for (int i = 0; i < N; ++i) {
         if (lhs[i] != rhs[i]) return false;
@@ -188,7 +212,7 @@ PointTmpl<T, N> operator==(const PointTmpl<T, N> &lhs, const PointTmpl<T, N> &rh
 
 
 template<typename T, int N>
-PointTmpl<T, N> operator!=(const PointTmpl<T, N> &lhs, const PointTmpl<T, N> &rhs) {
+bool operator!=(const PointTmpl<T, N> &lhs, const PointTmpl<T, N> &rhs) {
     return !(lhs == rhs);
 }
 
