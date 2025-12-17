@@ -1,6 +1,7 @@
 // This software was partially written using Suggestions from GitHub Copilot.
 #include <iostream>
 #include <string>
+#include <algorithm>
 #include "aoc_utils/io_helpers.h"
 
 using aoc_utils::get_input_filepath;
@@ -114,9 +115,9 @@ static std::int64_t star2(const std::string &filename) {
 }
 
 int main() {
-    std::cout << star1("example_input.txt") << std::endl;
-    std::cout << star1("input.txt") << std::endl;
-    std::cout << star2("example_input.txt") << std::endl;
-    std::cout << star2("input.txt") << std::endl;
+    std::cout << star1(aoc_utils::EXAMPLE_INPUT_FILE) << std::endl;
+    std::cout << star1(aoc_utils::INPUT_FILE) << std::endl;
+    std::cout << star2(aoc_utils::EXAMPLE_INPUT_FILE) << std::endl;
+    std::cout << star2(aoc_utils::INPUT_FILE) << std::endl;
     return 0;
 }

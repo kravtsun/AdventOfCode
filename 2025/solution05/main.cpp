@@ -9,6 +9,7 @@
 #include <iostream>
 #include <ranges>
 #include <format>
+#include <numeric>
 
 #include "aoc_utils/io_helpers.h"
 
@@ -65,24 +66,26 @@ static auto read_input(const std::string &filename) {
 
 static auto star1(const std::string &filepath) {
     const auto [ranges, queries] = read_input(filepath);
-    return std::ranges::count_if(queries, [&](ID num) {
-        return std::ranges::any_of(ranges, [&](const auto &[a, b]) {
-            return num >= a && num <= b;
+    return std::count_if(queries.begin(), queries.end(), [&ranges](ID id) {
+        return std::any_of(ranges.begin(), ranges.end(), [&](const auto &range) {
+            const auto [a, b] = range;
+            return id >= a && id <= b;
         });
     });
 }
 
 static auto star2(const std::string &filepath) {
     const auto [ranges, _] = read_input(filepath);
-    return std::accumulate(ranges.begin(), ranges.end(), std::uint64_t{0}, [](auto acc, const auto &[a, b]) {
+    return std::accumulate(ranges.begin(), ranges.end(), std::uint64_t{0}, [](auto acc, const auto &range) {
+        const auto &[a, b] = range;
         return acc + (b - a + 1);
     });
 }
 
 int main() {
-    std::cout << star1("example_input.txt") << std::endl;
-    std::cout << star1("input.txt") << std::endl;
-    std::cout << star2("example_input.txt") << std::endl;
-    std::cout << star2("input.txt") << std::endl;
+    std::cout << star1(aoc_utils::EXAMPLE_INPUT_FILE) << std::endl;
+    std::cout << star1(aoc_utils::INPUT_FILE) << std::endl;
+    std::cout << star2(aoc_utils::EXAMPLE_INPUT_FILE) << std::endl;
+    std::cout << star2(aoc_utils::INPUT_FILE) << std::endl;
     return 0;
 }

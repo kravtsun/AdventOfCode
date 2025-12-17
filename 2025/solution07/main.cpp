@@ -18,9 +18,9 @@ using aoc_utils::Field;
 using Point = aoc_utils::Field::Point;
 
 static int64 solve(const std::vector<std::string> &lines, bool is_second_star) {
-    Field f{lines};
+    Field field{lines};
 
-    auto start_pos = f.symbol_location('S');
+    auto start_pos = field.symbol_location('S');
 
     std::queue<Point> q;
     std::map<Point, bool> used;
@@ -30,7 +30,7 @@ static int64 solve(const std::vector<std::string> &lines, bool is_second_star) {
     d[start_pos] = 1;
 
     auto try_go = [&](const Point &from, const Point &next, auto &lines) {
-        if (f.is_good_point(next)) {
+        if (field.is_good_point(next)) {
             d[next] += d[from];
             if (!used[next]) {
                 used[next] = true;
@@ -41,31 +41,27 @@ static int64 solve(const std::vector<std::string> &lines, bool is_second_star) {
 
     int64 result = 0;
 
-    Field grid = f; // Copy grid to modify during traversal
-
     while (!q.empty()) {
         Point p = q.front();
         q.pop();
-        grid[p] = '|';
-//        std::cout << grid << std::endl;
 
         auto down = p.down();
-        if (!grid.is_good_point(down)) {
+        if (!field.is_good_point(down)) {
             continue;
         }
 
-        if (grid[down] == '^') {
+        if (field[down] == '^') {
             result += !is_second_star;
-            try_go(p, down.left(), grid);
-            try_go(p, down.right(), grid);
+            try_go(p, down.left(), field);
+            try_go(p, down.right(), field);
         } else {
-            try_go(p, down, grid);
+            try_go(p, down, field);
         }
     }
 
     if (is_second_star) {
-        for (int i = 0; i < f.width(); ++i) {
-            result += d[{i, f.height() - 1}];
+        for (int i = 0; i < field.width(); ++i) {
+            result += d[{i, field.height() - 1}];
         }
     }
 
@@ -83,9 +79,9 @@ static int64 star2(const std::string &filename) {
 }
 
 int main() {
-    std::cout << star1("example_input.txt") << std::endl;
-    std::cout << star1("input.txt") << std::endl;
-    std::cout << star2("example_input.txt") << std::endl;
-    std::cout << star2("input.txt") << std::endl;
+    std::cout << star1(aoc_utils::EXAMPLE_INPUT_FILE) << std::endl;
+    std::cout << star1(aoc_utils::INPUT_FILE) << std::endl;
+    std::cout << star2(aoc_utils::EXAMPLE_INPUT_FILE) << std::endl;
+    std::cout << star2(aoc_utils::INPUT_FILE) << std::endl;
     return 0;
 }

@@ -14,7 +14,7 @@ class PointTmpl {
     static_assert(N > 1, "Number of coordinates should be bigger than 1");
     std::array<T, N> coords;
 
-    explicit PointTmpl(const std::array<T, N> &arr = {}) : coords(arr) {}
+    explicit PointTmpl(const std::array<T, N> &arr) : coords(arr) {}
 
     PointTmpl(T x, T y)
         requires(N == 2)

@@ -487,7 +487,7 @@ static auto getSureAnswers(vvint64 &a) {
                 auto curSwitchCount = a[j][m] / *it;
                 if (a[j][m] % *it != 0 || curSwitchCount < 0) {
                     // non integral solution
-                    return std::make_tuple(map<int, int>{}, true),
+                    return map<int, int>{};
                 }
 //                assert(curSwitchCount >= 0);
 
@@ -503,7 +503,7 @@ static auto getSureAnswers(vvint64 &a) {
             }
         }
     }
-    return std::make_tuple(res, true);
+    return res;
 }
 
 void DFS(const State &finishState, const vint &switches, vbool &switchesUsed, int curRes, int &bestRes, vvint64 a) {
@@ -707,7 +707,6 @@ int main() {
     for (const auto& line : lines) {
         auto bestRes = star2(line);
         res += bestRes;
-        cout << bestRes << endl;
     }
 
     // max switches size 13
