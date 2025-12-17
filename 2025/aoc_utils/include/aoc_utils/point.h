@@ -14,7 +14,7 @@ class PointTmpl {
     static_assert(N > 1, "Number of coordinates should be bigger than 1");
     std::array<T, N> coords;
 
-    explicit PointTmpl(const std::array<T, N> &arr) : coords(arr) {}
+    explicit PointTmpl(const std::array<T, N> &arr = {}) : coords(arr) {}
 
     PointTmpl(T x, T y)
         requires(N == 2)
@@ -194,6 +194,7 @@ PointTmpl<MultiplierType, N> operator*(const PointTmpl<T, N> &lhs, const Multipl
 
 template<typename T, int N>
 bool operator<(const PointTmpl<T, N> &lhs, const PointTmpl<T, N> &rhs) {
+    PointTmpl<T, N> res;
     for (int i = 0; i < N; ++i) {
         if (lhs[i] != rhs[i]) return lhs[i] < rhs[i];
     }

@@ -54,7 +54,7 @@ static int extrapolatedFirstValue(vint v) {
 }
 
 int main() {
-    FILE *f = freopen(WORKDIR aoc_utils::INPUT_FILE, "r", stdin);
+    FILE *f = freopen(WORKDIR "input.txt", "r", stdin);
 
     int result = 0;
     std::string line;

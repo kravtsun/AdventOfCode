@@ -76,7 +76,7 @@ static SectionMap readSection() {
 int main() {
     // REVIEW: for freopen f is not used anywhere, can be misleading.
     // REVIEW: will be good to check if file is really open.
-    std::ifstream fin{std::string(WORKDIR) + aoc_utils::INPUT_FILE};
+    std::ifstream fin{std::string(WORKDIR) + "input.txt"};
     assert(fin.is_open());
     std::cin.rdbuf(fin.rdbuf());
 

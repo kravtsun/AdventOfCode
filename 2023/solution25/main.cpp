@@ -30,7 +30,7 @@ using vint64 = std::vector<int64>;
 using vvint64 = std::vector<vint64>;
 
 int main() {
-    std::ifstream fin{WORKDIR aoc_utils::INPUT_FILE};
+    std::ifstream fin{WORKDIR "input.txt"};
 //    std::ifstream fin{WORKDIR "input_sample.txt"};
     assert(fin.is_open());
     std::cin.rdbuf(fin.rdbuf());

@@ -121,18 +121,18 @@ static auto solve(const std::string &filepath, int saveThreshold, int distanceTh
 }
 
 static auto star1(const std::string &filepath) {
-    return solve(filepath, filepath == aoc_utils::EXAMPLE_INPUT_FILE ? 0 : 100, 2);
+    return solve(filepath, filepath == "example_input.txt" ? 0 : 100, 2);
 }
 
 static auto star2(const std::string &filepath) {
-    return solve(filepath, filepath == aoc_utils::EXAMPLE_INPUT_FILE ? 0 : 100, 20);
+    return solve(filepath, filepath == "example_input.txt" ? 0 : 100, 20);
 }
 
 int main() {
-    std::cout << star1(aoc_utils::EXAMPLE_INPUT_FILE) << std::endl; // 44
-    std::cout << star1(aoc_utils::INPUT_FILE) << std::endl; // 1530
+    std::cout << star1("example_input.txt") << std::endl; // 44
+    std::cout << star1("input.txt") << std::endl; // 1530
 
-    std::cout << star2(aoc_utils::EXAMPLE_INPUT_FILE) << std::endl; // 3081
-    std::cout << star2(aoc_utils::INPUT_FILE) << std::endl; // 1033983
+    std::cout << star2("example_input.txt") << std::endl; // 3081
+    std::cout << star2("input.txt") << std::endl; // 1033983
     return 0;
 }

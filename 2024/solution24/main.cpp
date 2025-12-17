@@ -270,7 +270,7 @@ static auto star2(const std::string &filepath) {
 int main() {
     std::cout << star1("example_input1.txt") << std::endl; // 4
     std::cout << star1("example_input2.txt") << std::endl; // 2024
-    std::cout << star1(aoc_utils::INPUT_FILE) << std::endl; // 53325321422566
-    std::cout << star2(aoc_utils::INPUT_FILE) << std::endl; // fkb,nnr,rdn,rqf,rrn,z16,z31,z37
+    std::cout << star1("input.txt") << std::endl; // 53325321422566
+    std::cout << star2("input.txt") << std::endl; // fkb,nnr,rdn,rqf,rrn,z16,z31,z37
     return 0;
 }

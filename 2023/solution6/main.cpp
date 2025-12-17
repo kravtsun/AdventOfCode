@@ -44,7 +44,7 @@ int64 getNumber()
 }
 
 int main() {
-    FILE *f = freopen(WORKDIR aoc_utils::INPUT_FILE, "r", stdin);
+    FILE *f = freopen(WORKDIR "input.txt", "r", stdin);
 //
 //    auto timeNumbers = getVint();
 //    auto distanceNumbers = getVint();

@@ -21,7 +21,7 @@ static const std::vector<std::string> numbers = {
 };
 
 int main() {
-    FILE *f = freopen(WORKDIR aoc_utils::INPUT_FILE, "r", stdin);
+    FILE *f = freopen(WORKDIR "input.txt", "r", stdin);
 
     std::vector<std::string> field;
 

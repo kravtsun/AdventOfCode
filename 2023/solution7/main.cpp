@@ -112,7 +112,7 @@ struct HandAndBid {
 };
 
 int main() {
-    FILE *f = freopen(WORKDIR aoc_utils::INPUT_FILE, "r", stdin);
+    FILE *f = freopen(WORKDIR "input.txt", "r", stdin);
 
     std::vector<HandAndBid> handAndBids;
     std::string line;

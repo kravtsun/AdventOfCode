@@ -248,9 +248,9 @@ static auto star2(const std::string &filepath) {
 }
 
 int main() {
-    std::cout << star1(aoc_utils::EXAMPLE_INPUT_FILE) << std::endl; // 41
-    std::cout << star1(aoc_utils::INPUT_FILE) << std::endl; // 4374
-    std::cout << star2(aoc_utils::EXAMPLE_INPUT_FILE) << std::endl; // 6
-    std::cout << star2(aoc_utils::INPUT_FILE) << std::endl; // 1705
+    std::cout << star1("example_input.txt") << std::endl; // 41
+    std::cout << star1("input.txt") << std::endl; // 4374
+    std::cout << star2("example_input.txt") << std::endl; // 6
+    std::cout << star2("input.txt") << std::endl; // 1705
     return 0;
 }

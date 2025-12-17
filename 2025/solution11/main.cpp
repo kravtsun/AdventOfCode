@@ -39,13 +39,13 @@ using vbool = vector<bool>;
 static auto INF = std::numeric_limits<int>::max();
 
 #if _MSVC_VER
-static const std::string EXAMPLE_INPUT_FILE = aoc_utils::EXAMPLE_INPUT_FILE;
+static const std::string EXAMPLE_INPUT_FILE = "example_input.txt";
 static const std::string INPUT_FILE = "C:\\Users\\Andrei\\Projects\\AdventOfCode\\2025\\solution10\\input.txt";
 #else
 static const std::string EXAMPLE_INPUT1_FILE = "example_input1.txt";
 static const std::string EXAMPLE_INPUT2_FILE = "example_input2.txt";
 static const std::string EXAMPLE_INPUT3_FILE = "example_input3.txt";
-static const std::string INPUT_FILE = aoc_utils::INPUT_FILE;
+static const std::string INPUT_FILE = "input.txt";
 #endif
 
 template<typename T = int64>

@@ -132,7 +132,7 @@ int solve(vs field, int loops) {
 }
 
 int main() {
-    std::ifstream fin{WORKDIR aoc_utils::INPUT_FILE};
+    std::ifstream fin{WORKDIR "input.txt"};
     assert(fin.is_open());
     std::cin.rdbuf(fin.rdbuf());
 

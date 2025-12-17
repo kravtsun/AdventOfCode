@@ -149,7 +149,7 @@ static void test_star1() {
         assert(expectedResult == actualResult);
     }
 
-    std::cout << solve(aoc_utils::INPUT_FILE, false) << std::endl;
+    std::cout << solve("input.txt", false) << std::endl;
 }
 
 static void test_star2() {
@@ -166,7 +166,7 @@ static void test_star2() {
         assert(expectedResult == actualResult);
     }
 
-    std::cout << solve(aoc_utils::INPUT_FILE, true) << std::endl;
+    std::cout << solve("input.txt", true) << std::endl;
 }
 
 int main() {

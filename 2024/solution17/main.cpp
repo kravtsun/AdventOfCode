@@ -184,7 +184,7 @@ static auto star2BruteForce(const std::string &filepath, OperandType startNumber
 }
 
 static auto star2SpecificCase(const std::string &filepath) {
-    if (filepath != aoc_utils::INPUT_FILE) {
+    if (filepath != "input.txt") {
         throw std::runtime_error("Only implemented for: input.txt");
     }
 
@@ -231,9 +231,9 @@ static auto star2SpecificCase(const std::string &filepath) {
 
 int main() {
     std::cout << star1("example_input1.txt") << std::endl;
-    std::cout << star1(aoc_utils::INPUT_FILE) << std::endl;
+    std::cout << star1("input.txt") << std::endl;
 
     std::cout << star2BruteForce("example_input2.txt", 1) << std::endl;
-    std::cout << star2SpecificCase(aoc_utils::INPUT_FILE) << std::endl;
+    std::cout << star2SpecificCase("input.txt") << std::endl;
     return 0;
 }
